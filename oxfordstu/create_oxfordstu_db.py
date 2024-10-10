@@ -125,6 +125,12 @@ def build_oxfordstu_word(
     except:
         raise ValueError(f'"{word}" failed getting from oxfordstu')
 
+    valid_derived_speech = [
+        PartOfSpeech.verb.value,
+        PartOfSpeech.noun.value,
+        PartOfSpeech.adjective.value,
+        PartOfSpeech.adverb.value,
+    ]
     if any((speech in alphabets.keys() for speech in word_dict.keys())):
         word_idx = insert_word(cursor, word_idx=word_idx, word=word)
     else:
@@ -134,6 +140,8 @@ def build_oxfordstu_word(
     for part_of_speech in word_dict:
         if not part_of_speech in alphabets.keys():
             log.warning(f'"{word}"({part_of_speech}) does\'t have alphabet:{alphabet}')
+            if not part_of_speech in valid_derived_speech:
+                continue
         alphabet = alphabets.get(part_of_speech, None)
         chinese = cn_dict.get(part_of_speech, None)
         inflection = tense.get(part_of_speech, None)
