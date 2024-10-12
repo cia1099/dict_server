@@ -18,7 +18,7 @@ def bind_engine(db_url: str):
 
         def execute(*args):
             with engine.connect() as cursor:
-                func(cursor, *args)
+                return func(cursor, *args)
 
         return execute
 
@@ -59,7 +59,7 @@ def test_dictionary(cursor: sql.engine.Connection, word: str):
 
 
 @bind_engine(DB_URL)
-def retrieved_word(cursor: sql.engine.Connection, word: str) -> dict:
+def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
     stmt = (
         sql.select(
             Word.word,
@@ -85,7 +85,7 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> dict:
     )
 
     res = cursor.execute(stmt)
-    cache = {}
+    cache = []
     for entry in res.fetchall():
         w = trace_word(
             [
@@ -101,60 +101,67 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> dict:
                 },
                 {
                     "part_of_speech": entry[1].value,
-                    "explanation": entry[-2],
+                    "explain": entry[-2],
                     "subscript": entry[8],
                 },
                 {
                     "part_of_speech": entry[1].value,
-                    "explanation": entry[-2],
+                    "explain": entry[-2],
                     "examples": entry[-1],
                 },
             ],
             cache,
         )
-        cache.update({entry[0]: w})
+        # print(json.dumps(w))
+        if not any((d for d in cache if d["word"] == entry[0])):
+            cache += [w]
 
+    # print(json.dumps(cache))
     return cache
 
 
-def trace_word(nodes: list, cache: dict) -> dict:
+def trace_word(nodes: list, cache: list[dict]) -> dict:
     node = nodes.pop()
     if len(nodes) == 0:
-        return cache.get(node, {})
+        return next(
+            filter(lambda d: d["word"] == node, cache),
+            {"word": node, "definitions": []},
+        )
+
     obj = trace_word(nodes, cache)
+    definition_objs: list = obj["definitions"]
     if isinstance(node, PartOfSpeech):
-        speech_obj = obj.get(node.value, {"definition": []})
-        obj.update({node.value: speech_obj})
+        def_obj: dict = next(
+            (d for d in definition_objs if d["part_of_speech"] == node.value), None
+        )
+        if not def_obj:
+            definition_objs += [{"part_of_speech": node.value, "explanations": []}]
     else:
         part_of_speech = node.pop("part_of_speech")
-        speech_obj = obj.get(part_of_speech, {})
+        def_obj: dict = next(
+            (d for d in definition_objs if d["part_of_speech"] == part_of_speech)
+        )
         if node.get("inflection"):
-            speech_obj.update(**node)
+            def_obj.update(**node)
 
-        definition_objs = speech_obj.get("definition", [])
-        if node.get("explanation"):
+        explanations = def_obj["explanations"]
+        if node.get("explain"):
             if not any(
-                (
-                    node.get("explanation") == def_obj["explanation"]
-                    for def_obj in definition_objs
-                )
+                (node.get("explain") == exp_obj["explain"] for exp_obj in explanations)
             ):
-                definition_objs += [node]
-        speech_obj.update({"definition": definition_objs})
+                explanations += [{**node, "examples": []}]
 
         # insert example
         if node.get("examples"):
-            for def_obj in definition_objs:
-                exps = def_obj.get("examples", [])
-                if def_obj["explanation"] == node["explanation"]:
-                    exps += [node["examples"]]
-                def_obj.update({"examples": exps})
+            for explanation in explanations:
+                if explanation["explain"] == node["explain"]:
+                    explanation["examples"] += [node["examples"]]
 
-        obj.update({part_of_speech: speech_obj})
+        obj.update({"definitions": definition_objs})
     return obj
 
 
 if __name__ == "__main__":
-    # cache = retrieved_word("drunk")
-    # print(json.dumps(cache))
-    test_dictionary("apple")
+    cache = retrieved_word("drunk")
+    print(json.dumps(cache))
+    # test_dictionary("drunk")
