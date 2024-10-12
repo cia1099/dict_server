@@ -139,10 +139,12 @@ def build_oxfordstu_word(
         )
     for part_of_speech in word_dict:
         if not part_of_speech in alphabets.keys():
-            log.warning(f'"{word}"({part_of_speech}) does\'t have alphabet:{alphabet}')
+            log.warning(
+                f'"{word}"({part_of_speech}) does\'t have alphabets:{[k for k in alphabets.keys()]}'
+            )
             if not part_of_speech in valid_derived_speech:
                 continue
-        alphabet = alphabets.get(part_of_speech, None)
+        alphabet = alphabets.get(part_of_speech, [])
         chinese = cn_dict.get(part_of_speech, None)
         inflection = tense.get(part_of_speech, None)
         part_word = part_word_from_dict(word_dict[part_of_speech])
@@ -187,7 +189,7 @@ if __name__ == "__main__":
     engine = create_engine(DB_URL, echo=False)
     Base.metadata.create_all(engine)
     word_idx, definition_idx, explanation_idx, example_idx = 0, 0, 0, 0
-    test_words = ["apple", "record", "watch", "drunk"]
+    test_words = ["abdomen"]  # ["apple", "record", "watch", "drunk"]
     tic = datetime.now()
     log.info(f"{tic.replace(microsecond=0)} started creating database ...")
     with engine.connect() as cursor:
