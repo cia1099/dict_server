@@ -39,7 +39,7 @@ def test_dictionary(cursor: sql.engine.Connection, word: str):
         )
         .join(Definition, Word.id == Definition.word_id)
         .join(Explanation, Explanation.definition_id == Definition.id)
-        .join(Example, Example.explanation_id == Explanation.id)
+        .outerjoin(Example, Example.explanation_id == Explanation.id)
         .where(
             Definition.inflection.regexp_match(rf"\b{word}\b")
             | (Word.word == word)
@@ -62,6 +62,7 @@ def test_dictionary(cursor: sql.engine.Connection, word: str):
 def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
     stmt = (
         sql.select(
+            Word.id,
             Word.word,
             Definition.part_of_speech,
             Definition.inflection,
@@ -76,11 +77,11 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
         )
         .join(Definition, Word.id == Definition.word_id)
         .join(Explanation, Explanation.definition_id == Definition.id)
-        .join(Example, Example.explanation_id == Explanation.id)
+        .outerjoin(Example, Example.explanation_id == Explanation.id)
         .where(
             Definition.inflection.regexp_match(rf"\b{word}\b")
             | (Word.word == word)
-            | (Explanation.explain == word)
+            # | (Explanation.explain == word)
         )
     )
 
@@ -89,31 +90,31 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
     for entry in res.fetchall():
         w = trace_word(
             [
-                entry[0],
-                entry[1],
+                {"word_id": entry[0], "word": entry[1]},
+                entry[2],
                 {
-                    "part_of_speech": entry[1].value,
-                    "inflection": entry[2],
-                    "phonetic_uk": entry[3],
-                    "phonetic_us": entry[4],
-                    "audio_uk": entry[5],
-                    "audio_us": entry[6],
+                    "part_of_speech": entry[2].value,
+                    "inflection": entry[3],
+                    "phonetic_uk": entry[4],
+                    "phonetic_us": entry[5],
+                    "audio_uk": entry[6],
+                    "audio_us": entry[7],
                 },
                 {
-                    "part_of_speech": entry[1].value,
+                    "part_of_speech": entry[2].value,
                     "explain": entry[-2],
-                    "subscript": entry[8],
+                    "subscript": entry[-3],
                 },
                 {
-                    "part_of_speech": entry[1].value,
+                    "part_of_speech": entry[2].value,
                     "explain": entry[-2],
-                    "examples": entry[-1],
+                    "example": entry[-1],
                 },
             ],
             cache,
         )
         # print(json.dumps(w))
-        if not any((d for d in cache if d["word"] == entry[0])):
+        if not any((d for d in cache if d["word_id"] == entry[0])):
             cache += [w]
 
     # print(json.dumps(cache))
@@ -124,8 +125,8 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
     node = nodes.pop()
     if len(nodes) == 0:
         return next(
-            filter(lambda d: d["word"] == node, cache),
-            {"word": node, "definitions": []},
+            filter(lambda d: d["word_id"] == node["word_id"], cache),
+            {**node, "definitions": []},
         )
 
     obj = trace_word(nodes, cache)
@@ -141,7 +142,7 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
         def_obj: dict = next(
             (d for d in definition_objs if d["part_of_speech"] == part_of_speech)
         )
-        if len(node) == 5:  # node.get("inflection"):
+        if "inflection" in node.keys():
             def_obj.update(**node)
 
         explanations = def_obj["explanations"]
@@ -152,16 +153,16 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
                 explanations += [{**node, "examples": []}]
 
         # insert example
-        if node.get("examples"):
+        if node.get("example"):
             for explanation in explanations:
                 if explanation["explain"] == node["explain"]:
-                    explanation["examples"] += [node["examples"]]
+                    explanation["examples"] += [node["example"]]
 
         # obj.update({"definitions": definition_objs})
     return obj
 
 
 if __name__ == "__main__":
-    cache = retrieved_word("drunk")
+    cache = retrieved_word("drink")
     print(json.dumps(cache))
-    # test_dictionary("abduct")
+    # test_dictionary("abdomen")
