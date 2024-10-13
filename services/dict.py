@@ -31,7 +31,7 @@ def test_dictionary(cursor: sql.engine.Connection, word: str):
         sql.select(
             Word.id,
             Word.word,
-            Definition.id,
+            Definition.part_of_speech,
             Explanation.id,
             Explanation.subscript,
             Explanation.explain,
@@ -141,7 +141,7 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
         def_obj: dict = next(
             (d for d in definition_objs if d["part_of_speech"] == part_of_speech)
         )
-        if node.get("inflection"):
+        if len(node) == 5:  # node.get("inflection"):
             def_obj.update(**node)
 
         explanations = def_obj["explanations"]
@@ -157,11 +157,11 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
                 if explanation["explain"] == node["explain"]:
                     explanation["examples"] += [node["examples"]]
 
-        obj.update({"definitions": definition_objs})
+        # obj.update({"definitions": definition_objs})
     return obj
 
 
 if __name__ == "__main__":
     cache = retrieved_word("drunk")
     print(json.dumps(cache))
-    # test_dictionary("drunk")
+    # test_dictionary("abduct")

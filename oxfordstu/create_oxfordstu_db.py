@@ -189,7 +189,7 @@ if __name__ == "__main__":
     engine = create_engine(DB_URL, echo=False)
     Base.metadata.create_all(engine)
     word_idx, definition_idx, explanation_idx, example_idx = 0, 0, 0, 0
-    test_words = ["abdomen"]  # ["apple", "record", "watch", "drunk"]
+    test_words = ["abduct", "abdomen"]  # ["apple", "record", "watch", "drunk"]
     tic = datetime.now()
     log.info(f"{tic.replace(microsecond=0)} started creating database ...")
     with engine.connect() as cursor:
