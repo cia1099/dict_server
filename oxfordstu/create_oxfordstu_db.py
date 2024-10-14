@@ -181,6 +181,55 @@ def build_oxfordstu_word(
     return word_idx, definition_idx, explanation_idx, example_idx
 
 
+def modified_null_alphabet(cursor: sql.engine.Connection):
+    stmt = (
+        sql.select(
+            Explanation.explain,
+            Definition.part_of_speech,
+            Definition.id,
+            Definition.alphabet_uk,
+            Definition.alphabet_us,
+            Definition.inflection,
+        )
+        .join(Explanation, Explanation.definition_id == Definition.id)
+        .where((Definition.alphabet_uk == None) | (Definition.alphabet_us == None))
+    )
+    res = cursor.execute(stmt)
+    log.debug("Start to modified loss alphabets ...")
+    for entry in reader.tqdm(res.fetchall()):
+        word = entry[0]
+        try:
+            cn_dict, alphabets = get_cambridge_chinese(word)
+        except:
+            log.warning(f'"{word}" failed getting from cambridge')
+            cn_dict, alphabets = {}, {}
+        try:
+            tense, mac_prons = get_macmillan_tense(word)
+        except:
+            log.warning(f'"{word}" failed getting from macmillan')
+            continue
+        for k, v in mac_prons.items():
+            if k in alphabets:
+                continue
+            alphabets[k] = v
+
+        part_of_speech = entry[1]
+        alphabet = alphabets.get(part_of_speech)
+        if alphabet:
+            content = {
+                "alphabet_us": alphabet[-1],
+                "alphabet_uk": alphabet[0],
+                "inflection": tense.get(part_of_speech),
+                "chinese": cn_dict.get(part_of_speech),
+            }
+            update_query = (
+                sql.update(Definition)
+                .where(Definition.id == entry[2])
+                .values(**content)
+            )
+            cursor.execute(update_query)
+
+
 if __name__ == "__main__":
     os.system("rm oxfordstu.db*")
     DB_URL = "sqlite:///oxfordstu.db"
@@ -215,6 +264,8 @@ if __name__ == "__main__":
                     log.critical(f"{e}")
                 log.debug("%s" % e)
 
+        cursor.commit()
+        modified_null_alphabet(cursor)
         cursor.commit()
         toc = datetime.now()
         log.info(f"{toc.replace(microsecond=0)} finished progress ...")

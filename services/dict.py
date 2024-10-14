@@ -59,6 +59,28 @@ def test_dictionary(cursor: sql.engine.Connection, word: str):
 
 
 @bind_engine(DB_URL)
+def find_null_alphabets(cursor: sql.engine.Connection):
+    stmt = (
+        sql.select(
+            # Word.word,
+            Definition.id,
+            # Definition.part_of_speech,
+            # Definition.alphabet_uk,
+            # Definition.alphabet_us,
+            Explanation.explain,
+        )
+        # .outerjoin(Definition, Definition.word_id == Word.id)
+        .join(Explanation, Explanation.definition_id == Definition.id).where(
+            (Definition.alphabet_uk == None) | (Definition.alphabet_us == None)
+        )
+    )
+    res = cursor.execute(stmt)
+    print(len(res.fetchall()))
+    # for entry in res:
+    #     print(entry)
+
+
+@bind_engine(DB_URL)
 def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
     stmt = (
         sql.select(
@@ -76,12 +98,12 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
             Example.example,
         )
         .join(Definition, Word.id == Definition.word_id)
-        .join(Explanation, Explanation.definition_id == Definition.id)
+        .join(Explanation, Explanation.word_id == Definition.word_id)
         .outerjoin(Example, Example.explanation_id == Explanation.id)
         .where(
             Definition.inflection.regexp_match(rf"\b{word}\b")
             | (Word.word == word)
-            # | (Explanation.explain == word)
+            | (Explanation.explain == word)
         )
     )
 
@@ -163,6 +185,7 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
 
 
 if __name__ == "__main__":
-    cache = retrieved_word("drink")
-    print(json.dumps(cache))
+    # cache = retrieved_word("drunk")
+    # print(json.dumps(cache))
     # test_dictionary("abdomen")
+    find_null_alphabets()
