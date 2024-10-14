@@ -8,32 +8,38 @@ if __name__ == "__main__":
     # 将上一层目录添加到模块搜索路径中
     sys.path.append(parent_dir)
 
-import re
-from typing import Annotated
 from services.dict import trace_word
 from oxfordstu.oxfordstu_schema import *
 from fastapi import APIRouter, Depends
 import sqlalchemy as sql
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncConnection
+from database import cursor
 
-
-DB_URL = "sqlite+aiosqlite:///dictionary/oxfordstu.db"
-
-
-async def bind_engine():
-    engine = create_async_engine(DB_URL)
-    async with engine.connect() as cursor:
-        yield cursor
-
-
-CursorDep = Annotated[AsyncConnection, Depends(bind_engine)]
+# from typing import Annotated
+# from sqlalchemy.ext.asyncio import create_async_engine, AsyncConnection
+# DB_URL = "sqlite+aiosqlite:///dictionary/oxfordstu.db"
+# async def bind_engine():
+#     engine = create_async_engine(DB_URL)
+#     async with engine.connect() as cursor:
+#         yield cursor
+# CursorDep = Annotated[AsyncConnection, Depends(bind_engine)]
 
 
 router = APIRouter()
 
 
 @router.get("/retrieval")
-async def retrieved_word(word: str, cursor: CursorDep):
+async def retrieved_word(word: str):
+    subq = (
+        sql.select(Word.id)
+        .join(Definition, Word.id == Definition.word_id)
+        .join(Explanation, Explanation.definition_id == Definition.id)
+        .where(
+            Definition.inflection.regexp_match(rf"\b{word}\b")
+            | (Word.word == word)
+            | (Explanation.explain == word)
+        )
+        .group_by(Word.id)
+    )
     stmt = (
         sql.select(
             Word.id,
@@ -50,20 +56,13 @@ async def retrieved_word(word: str, cursor: CursorDep):
             Example.example,
         )
         .join(Definition, Word.id == Definition.word_id)
-        .join(Explanation, Explanation.word_id == Definition.word_id)
+        .join(Explanation, Explanation.definition_id == Definition.id)
         .outerjoin(Example, Example.explanation_id == Explanation.id)
-        .where(
-            Definition.inflection.regexp_match(rf"\b{word}\b")
-            | (Word.word == word)
-            | (Explanation.explain == word)
-        )
+        .where(Word.id.in_(subq))
     )
-    print("\x1b[32m%s\x1b[0m" % stmt)
 
-    engine = create_async_engine(DB_URL)
     res = await cursor.execute(stmt)
     cache = []
-    # print(f"\x1b[43mresult has {len(res)}\x1b[0m")
     for entry in res.fetchall():
         w = trace_word(
             [

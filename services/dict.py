@@ -31,32 +31,26 @@ def test_dictionary(cursor: sql.engine.Connection, word: str):
     subq = (
         sql.select(
             Word.id,
-            Word.word,
-            Definition.part_of_speech,
-            Explanation.id,
-            Explanation.subscript,
-            Explanation.explain,
-            Example.example,
         )
         .join(Definition, Word.id == Definition.word_id)
         .join(Explanation, Explanation.definition_id == Definition.id)
-        .outerjoin(Example, Example.explanation_id == Explanation.id)
         .where(
             Definition.inflection.regexp_match(rf"\b{word}\b")
             | (Word.word == word)
             | (Explanation.explain == word)
         )
+        .group_by(Word.id)
     )
-    # print("\x1b[32m%s\x1b[0m" % subq)
     onlye = (
         sql.select(Word.id, Word.word, Explanation.explain)
         .outerjoin(Explanation, Explanation.word_id == Word.id)
-        .where(Explanation.word_id == 16)
+        .where(Explanation.word_id.in_(subq))
     )
-    res = cursor.execute(subq)
-    # print(res.fetchall())
-    for entry in res.fetchall():
-        print(entry)
+    print("\x1b[32m%s\x1b[0m" % onlye)
+    res = cursor.execute(onlye)
+    print(res.fetchall())
+    # for entry in res.fetchall():
+    #     print(entry)
 
 
 @bind_engine(DB_URL)
@@ -83,6 +77,17 @@ def find_null_alphabets(cursor: sql.engine.Connection):
 
 @bind_engine(DB_URL)
 def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
+    subq = (
+        sql.select(Word.id)
+        .join(Definition, Word.id == Definition.word_id)
+        .join(Explanation, Explanation.definition_id == Definition.id)
+        .where(
+            Definition.inflection.regexp_match(rf"\b{word}\b")
+            | (Word.word == word)
+            | (Explanation.explain == word)
+        )
+        .group_by(Word.id)
+    )
     stmt = (
         sql.select(
             Word.id,
@@ -101,12 +106,9 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
         .join(Definition, Word.id == Definition.word_id)
         .join(Explanation, Explanation.definition_id == Definition.id)
         .outerjoin(Example, Example.explanation_id == Explanation.id)
-        .where(
-            Definition.inflection.regexp_match(rf"\b{word}\b")
-            | (Word.word == word)
-            | (Explanation.explain == word)
-        )
+        .where(Word.id.in_(subq))
     )
+    # print("\x1b[32m%s\x1b[0m" % stmt)
 
     res = cursor.execute(stmt)
     cache = []
@@ -187,7 +189,7 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
 
 
 if __name__ == "__main__":
-    cache = retrieved_word("abdominal")
+    cache = retrieved_word("drunk")
     print(json.dumps(cache))
-    # test_dictionary("abdomen")
+    # test_dictionary("drunk")
     # find_null_alphabets()
