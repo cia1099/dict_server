@@ -10,9 +10,11 @@ gtts = "*"
 httpx = "*"
 pyglet = "*"
 beautifulsoup4 = "*"
-sqlalchemy = "*"
 lxml = "*"
 tqdm = "*"
+uvicorn = {extras = ["standard"], version = "*"}
+fastapi = "*"
+sqlalchemy = {extras = ["asyncio"], version = "*"}
 
 [dev-packages]
 black = {extras = ["d"], version = "*"}

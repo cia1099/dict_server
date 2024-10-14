@@ -207,7 +207,7 @@ def modified_null_alphabet(cursor: sql.engine.Connection):
             tense, mac_prons = get_macmillan_tense(word)
         except:
             log.warning(f'"{word}" failed getting from macmillan')
-            continue
+            tense, mac_prons = {}, {}
         for k, v in mac_prons.items():
             if k in alphabets:
                 continue

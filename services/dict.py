@@ -1,11 +1,12 @@
-import os, sys, json
+if __name__ == "__main__":
+    import os, sys, json
 
-# 获取当前文件所在的目录
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# 获取上一层目录的路径
-parent_dir = os.path.dirname(current_dir)
-# 将上一层目录添加到模块搜索路径中
-sys.path.append(parent_dir)
+    # 获取当前文件所在的目录
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # 获取上一层目录的路径
+    parent_dir = os.path.dirname(current_dir)
+    # 将上一层目录添加到模块搜索路径中
+    sys.path.append(parent_dir)
 import sqlalchemy as sql
 from oxfordstu.oxfordstu_schema import *
 
@@ -98,7 +99,7 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
             Example.example,
         )
         .join(Definition, Word.id == Definition.word_id)
-        .join(Explanation, Explanation.word_id == Definition.word_id)
+        .join(Explanation, Explanation.definition_id == Definition.id)
         .outerjoin(Example, Example.explanation_id == Explanation.id)
         .where(
             Definition.inflection.regexp_match(rf"\b{word}\b")
@@ -109,13 +110,14 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
 
     res = cursor.execute(stmt)
     cache = []
+    # print(f"\x1b[43mresult has {len(res.fetchall())}\x1b[0m")
     for entry in res.fetchall():
         w = trace_word(
             [
                 {"word_id": entry[0], "word": entry[1]},
                 entry[2],
                 {
-                    "part_of_speech": entry[2].value,
+                    "part_of_speech": entry[2],
                     "inflection": entry[3],
                     "phonetic_uk": entry[4],
                     "phonetic_us": entry[5],
@@ -123,12 +125,12 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
                     "audio_us": entry[7],
                 },
                 {
-                    "part_of_speech": entry[2].value,
+                    "part_of_speech": entry[2],
                     "explain": entry[-2],
                     "subscript": entry[-3],
                 },
                 {
-                    "part_of_speech": entry[2].value,
+                    "part_of_speech": entry[2],
                     "explain": entry[-2],
                     "example": entry[-1],
                 },
@@ -153,12 +155,12 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
 
     obj = trace_word(nodes, cache)
     definition_objs: list = obj["definitions"]
-    if isinstance(node, PartOfSpeech):
+    if isinstance(node, str):
         def_obj: dict = next(
-            (d for d in definition_objs if d["part_of_speech"] == node.value), None
+            (d for d in definition_objs if d["part_of_speech"] == node), None
         )
         if not def_obj:
-            definition_objs += [{"part_of_speech": node.value, "explanations": []}]
+            definition_objs += [{"part_of_speech": node, "explanations": []}]
     else:
         part_of_speech = node.pop("part_of_speech")
         def_obj: dict = next(
@@ -185,7 +187,7 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
 
 
 if __name__ == "__main__":
-    # cache = retrieved_word("drunk")
-    # print(json.dumps(cache))
+    cache = retrieved_word("abdominal")
+    print(json.dumps(cache))
     # test_dictionary("abdomen")
-    find_null_alphabets()
+    # find_null_alphabets()
