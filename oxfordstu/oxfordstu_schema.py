@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Enum,
+    UniqueConstraint,
     # ARRAY, #only support postgresql
     create_engine,
 )
@@ -70,6 +71,10 @@ class Example(Base):
 
 class Asset(Base):
     __tablename__ = "assets"
+    __table_args__ = (
+        Index("UX_asset", "word_id"),
+        UniqueConstraint("word_id", "id", name="word_unique"),
+    )
     id = Column(Integer, primary_key=True)
     word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
     filename = Column(String, nullable=False)

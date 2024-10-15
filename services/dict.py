@@ -76,6 +76,69 @@ def find_null_alphabets(cursor: sql.engine.Connection):
 
 
 @bind_engine(DB_URL)
+def retrieved_word_id(cursor: sql.engine.Connection, word_id: int):
+    stmt = (
+        sql.select(
+            Word.id,
+            Word.word,
+            Asset.filename,
+            Definition.part_of_speech,
+            Definition.inflection,
+            Definition.alphabet_uk,
+            Definition.alphabet_us,
+            Definition.audio_uk,
+            Definition.audio_us,
+            Definition.chinese,
+            Explanation.subscript,
+            Explanation.explain,
+            Example.example,
+        )
+        .outerjoin(Asset, Asset.word_id == Word.id)
+        .join(Definition, Word.id == Definition.word_id)
+        .join(Explanation, Explanation.definition_id == Definition.id)
+        .outerjoin(Example, Example.explanation_id == Explanation.id)
+        .where(Word.id == word_id)
+    )
+
+    res = cursor.execute(stmt)
+    cache = []
+    for entry in res.fetchall():
+        w = trace_word(
+            [
+                {"word_id": entry[0], "word": entry[1], "asset": entry[2]},
+                entry[3],
+                {
+                    "part_of_speech": entry[3],
+                    "inflection": entry[4],
+                    "phonetic_uk": entry[5],
+                    "phonetic_us": entry[6],
+                    "audio_uk": entry[7],
+                    "audio_us": entry[8],
+                },
+                {
+                    "part_of_speech": entry[3],
+                    "explain": entry[-2],
+                    "subscript": entry[-3],
+                },
+                {
+                    "part_of_speech": entry[3],
+                    "explain": entry[-2],
+                    "example": entry[-1],
+                },
+            ],
+            cache,
+        )
+        if not any((d for d in cache if d["word_id"] == entry[0])):
+            cache += [w]
+
+    return (
+        cache[0]
+        if len(cache) > 0
+        else {"word_id": word_id, "word": "not found", "definitions": []}
+    )
+
+
+@bind_engine(DB_URL)
 def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
     subq = (
         sql.select(Word.id)
@@ -169,7 +232,8 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
             (d for d in definition_objs if d["part_of_speech"] == part_of_speech)
         )
         if "inflection" in node.keys():
-            def_obj.update(**node)
+            if not all((k in def_obj for k in node.keys())):
+                def_obj.update(**node)
 
         explanations = def_obj["explanations"]
         if node.get("explain"):
@@ -189,7 +253,8 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
 
 
 if __name__ == "__main__":
-    cache = retrieved_word("drunk")
+    # cache = retrieved_word("drunk")
+    cache = retrieved_word_id(13747)
     print(json.dumps(cache))
     # test_dictionary("drunk")
     # find_null_alphabets()
