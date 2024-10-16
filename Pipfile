@@ -15,6 +15,7 @@ tqdm = "*"
 uvicorn = {extras = ["standard"], version = "*"}
 fastapi = "*"
 sqlalchemy = {extras = ["asyncio"], version = "*"}
+psycopg2-binary = "*"
 
 [dev-packages]
 black = {extras = ["d"], version = "*"}
