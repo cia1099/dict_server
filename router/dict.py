@@ -9,9 +9,10 @@ if __name__ == "__main__":
     sys.path.append(parent_dir)
 
 import json
+from typing import Iterable, List
 from services.dict import trace_word
 from oxfordstu.oxfordstu_schema import *
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 import sqlalchemy as sql
 from database import cursor
 
@@ -97,8 +98,28 @@ async def retrieved_word(word: str):
     return {"status": 200 if len(cache) else 404, "content": content}
 
 
-@router.get("/word/{word_id}")
-async def retrieved_word_id(word_id: int):
+@router.get("/words")
+async def get_words(id: List[int] = Query(default=[])):
+    words = await retrieved_word_id(id)
+    content = json.dumps(words) if len(words) else f"word@{id} not found"
+    return {"status": 200 if len(words) else 404, "content": content}
+
+
+@router.get("/words/{word_id}")
+async def get_word_by_id(word_id: int):
+    words = await retrieved_word_id([word_id])
+    content = json.dumps(words[0]) if len(words) else f"word#{word_id} not found"
+    return {"status": 200 if len(words) else 404, "content": content}
+
+
+@router.get("/words/max_id")
+async def get_word_max_id():
+    stmt = sql.select(sql.func.count(Word.id))
+    max_id = await cursor.execute(stmt)
+    return {"status": 200, "content": "%d" % max_id.scalar()}
+
+
+async def retrieved_word_id(word_ids: Iterable[int]) -> List[dict]:
     stmt = (
         sql.select(
             Word.id,
@@ -119,7 +140,7 @@ async def retrieved_word_id(word_id: int):
         .join(Definition, Word.id == Definition.word_id)
         .join(Explanation, Explanation.definition_id == Definition.id)
         .outerjoin(Example, Example.explanation_id == Explanation.id)
-        .where(Word.id == word_id)
+        .where(Word.id.in_(word_ids))
     )
 
     res = await cursor.execute(stmt)
@@ -153,12 +174,7 @@ async def retrieved_word_id(word_id: int):
         if not any((d for d in cache if d["word_id"] == entry[0])):
             cache += [w]
 
-    content = json.dumps(cache[0]) if len(cache) else f"word#{word_id} not found"
-    # from fastapi.responses import JSONResponse
-    # return JSONResponse(
-    #     content={"status": 200 if len(cache) else 404, "content": content}
-    # )
-    return {"status": 200 if len(cache) else 404, "content": content}
+    return cache
 
 
 async def a_run():

@@ -57,11 +57,7 @@ def test_dictionary(cursor: sql.engine.Connection, word: str):
 def find_null_alphabets(cursor: sql.engine.Connection):
     stmt = (
         sql.select(
-            # Word.word,
             Definition.id,
-            # Definition.part_of_speech,
-            # Definition.alphabet_uk,
-            # Definition.alphabet_us,
             Explanation.explain,
         )
         # .outerjoin(Definition, Definition.word_id == Word.id)
@@ -73,6 +69,20 @@ def find_null_alphabets(cursor: sql.engine.Connection):
     print(len(res.fetchall()))
     # for entry in res:
     #     print(entry)
+
+
+# @bind_engine(DB_URL)
+def get_indexes(cursor: sql.engine.Connection):
+    stmt = sql.select(
+        sql.select(sql.func.count(Word.id)).scalar_subquery(),
+        sql.select(sql.func.count(Definition.id)).scalar_subquery(),
+        sql.select(sql.func.count(Explanation.id)).scalar_subquery(),
+        sql.select(sql.func.count(Example.id)).scalar_subquery(),
+    )
+    # stmt = sql.select(sql.func.count(Word.id))
+    # print("\x1b[32m%s\x1b[0m" % stmt)
+    res = cursor.execute(stmt)
+    return res.one()
 
 
 @bind_engine(DB_URL)
@@ -254,7 +264,8 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
 
 if __name__ == "__main__":
     # cache = retrieved_word("drunk")
-    cache = retrieved_word_id(13747)
-    print(json.dumps(cache))
+    # cache = retrieved_word_id(13747)
+    # print(json.dumps(cache))
     # test_dictionary("drunk")
     # find_null_alphabets()
+    print(get_indexes())

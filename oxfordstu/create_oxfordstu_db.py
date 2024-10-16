@@ -13,6 +13,7 @@ from parse_oxfordstu import (
     create_oxfordstu_word,
 )
 from model import part_word_from_dict
+from services.dict import get_indexes
 
 
 def insert_word(cursor: sql.engine.Connection, word_idx: int, word: str) -> int:
@@ -237,11 +238,11 @@ if __name__ == "__main__":
 
     engine = create_engine(DB_URL, echo=False)
     Base.metadata.create_all(engine)
-    word_idx, definition_idx, explanation_idx, example_idx = 0, 0, 0, 0
     test_words = ["abduct", "abdomen"]  # ["apple", "record", "watch", "drunk"]
     tic = datetime.now()
     log.info(f"{tic.replace(microsecond=0)} started creating database ...")
     with engine.connect() as cursor:
+        word_idx, definition_idx, explanation_idx, example_idx = get_indexes(cursor)
         # for word in test_words:
         #     html = reader.query(MDX_URL, word)
         for k, v in reader.tqdm(reader.MDX(MDX_URL).items(), total=28895):
