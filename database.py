@@ -37,9 +37,67 @@ else:
                 sql.select(Example),
                 sql.select(Asset),
             ]
-            for stmt in tqdm(stmts):
+            for i, stmt in enumerate(tqdm(stmts)):
                 rows = local_session.scalars(stmt).all()
-                local_session.expunge_all()
+                # local_session.expunge_all()
                 print(f"\x1b[43mrows: {len(rows)}, type: {type(rows[0])}\x1b[0m")
-                remote_session.add_all(rows)
+                match i:
+                    case 0:
+                        remote_session.add_all(
+                            (Word(id=w.id, word=w.word) for w in rows)
+                        )
+                    case 1:
+                        remote_session.add_all(
+                            (
+                                Definition(
+                                    id=w.id,
+                                    word_id=w.word_id,
+                                    part_of_speech=w.part_of_speech,
+                                    inflection=w.inflection,
+                                    alphabet_us=w.alphabet_us,
+                                    alphabet_uk=w.alphabet_uk,
+                                    audio_us=w.audio_us,
+                                    audio_uk=w.audio_uk,
+                                    chinese=w.chinese,
+                                )
+                                for w in rows
+                            )
+                        )
+                    case 2:
+                        remote_session.add_all(
+                            (
+                                Explanation(
+                                    id=w.id,
+                                    word_id=w.word_id,
+                                    definition_id=w.definition_id,
+                                    explain=w.explain,
+                                    subscript=w.subscript,
+                                    create_at=w.create_at,
+                                )
+                                for w in rows
+                            )
+                        )
+                    case 3:
+                        remote_session.add_all(
+                            (
+                                Example(
+                                    id=w.id,
+                                    word_id=w.word_id,
+                                    explanation_id=w.explanation_id,
+                                    example=w.example,
+                                )
+                                for w in rows
+                            )
+                        )
+                    case _:
+                        remote_session.add_all(
+                            (
+                                Asset(id=w.id, filename=w.filename, word_id=w.word_id)
+                                for w in rows
+                            )
+                        )
                 remote_session.commit()
+            # remote_session.add_all(
+            #     (Word(id=i, word="shit_%05d" % i) for i in range(1, 10000))
+            # )
+        # remote_session.commit()
