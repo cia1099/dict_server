@@ -153,7 +153,7 @@ async def retrieved_word_id(word_id: int):
         if not any((d for d in cache if d["word_id"] == entry[0])):
             cache += [w]
 
-    content = json.dumps(cache[0]) if len(cache) else f"#{word_id} not found"
+    content = json.dumps(cache[0]) if len(cache) else f"word#{word_id} not found"
     # from fastapi.responses import JSONResponse
     # return JSONResponse(
     #     content={"status": 200 if len(cache) else 404, "content": content}

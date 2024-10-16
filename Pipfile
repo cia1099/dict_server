@@ -16,6 +16,9 @@ uvicorn = {extras = ["standard"], version = "*"}
 fastapi = "*"
 sqlalchemy = {extras = ["asyncio"], version = "*"}
 psycopg2-binary = "*"
+aiosqlite = "*"
+pydantic-settings = "*"
+asyncpg = "*"
 
 [dev-packages]
 black = {extras = ["d"], version = "*"}

@@ -1,10 +1,7 @@
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncConnection
 from fastapi import FastAPI
-
-DB_URL = "sqlite+aiosqlite:///dictionary/oxfordstu.db"
-engine = create_async_engine(DB_URL)
-cursor: AsyncConnection = engine.connect()
+from __init__ import config
 
 
 @asynccontextmanager
@@ -16,9 +13,12 @@ async def db_life(app: FastAPI):
     await engine.dispose()
 
 
-if __name__ == "__main__":
+if __name__ != "__main__":
+    engine = create_async_engine(config.DB_URL)
+    cursor: AsyncConnection = engine.connect()
+else:
     local_db = "sqlite:///dictionary/oxfordstu.db"
-    remote_db = ""
+    remote_db = config.DB_URL
     import sqlalchemy as sql
     from sqlalchemy.orm import Session
     from oxfordstu.oxfordstu_schema import *
@@ -39,5 +39,7 @@ if __name__ == "__main__":
             ]
             for stmt in tqdm(stmts):
                 rows = local_session.scalars(stmt).all()
+                local_session.expunge_all()
+                print(f"\x1b[43mrows: {len(rows)}, type: {type(rows[0])}\x1b[0m")
                 remote_session.add_all(rows)
                 remote_session.commit()
