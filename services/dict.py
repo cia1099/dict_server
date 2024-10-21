@@ -124,6 +124,7 @@ def retrieved_word_id(cursor: sql.engine.Connection, word_id: int):
                     "phonetic_us": entry[6],
                     "audio_uk": entry[7],
                     "audio_us": entry[8],
+                    "translate": entry[-4],
                 },
                 {
                     "part_of_speech": entry[3],
@@ -198,6 +199,7 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
                     "phonetic_us": entry[5],
                     "audio_uk": entry[6],
                     "audio_us": entry[7],
+                    "translate": entry[-4],
                 },
                 {
                     "part_of_speech": entry[2],
@@ -263,9 +265,9 @@ def trace_word(nodes: list, cache: list[dict]) -> dict:
 
 
 if __name__ == "__main__":
-    # cache = retrieved_word("drunk")
-    # cache = retrieved_word_id(13747)
-    # print(json.dumps(cache))
+    cache = retrieved_word("drunk")
+    # cache = retrieved_word_id(830)
+    print(json.dumps(cache))
     # test_dictionary("drunk")
     # find_null_alphabets()
-    print(get_indexes())
+    # print(get_indexes())
