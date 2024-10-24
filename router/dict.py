@@ -46,6 +46,7 @@ async def retrieved_word(word: str):
         sql.select(
             Word.id,
             Word.word,
+            Asset.filename,
             Definition.part_of_speech,
             Definition.inflection,
             Definition.alphabet_uk,
@@ -68,23 +69,24 @@ async def retrieved_word(word: str):
     for entry in res.fetchall():
         w = trace_word(
             [
-                {"word_id": entry[0], "word": entry[1]},
-                entry[2],
+                {"word_id": entry[0], "word": entry[1], "asset": entry[2]},
+                entry[3],
                 {
-                    "part_of_speech": entry[2],
-                    "inflection": entry[3],
-                    "phonetic_uk": entry[4],
-                    "phonetic_us": entry[5],
-                    "audio_uk": entry[6],
-                    "audio_us": entry[7],
+                    "part_of_speech": entry[3],
+                    "inflection": entry[4],
+                    "phonetic_uk": entry[5],
+                    "phonetic_us": entry[6],
+                    "audio_uk": entry[7],
+                    "audio_us": entry[8],
+                    "translate": entry[-4],
                 },
                 {
-                    "part_of_speech": entry[2],
+                    "part_of_speech": entry[3],
                     "explain": entry[-2],
                     "subscript": entry[-3],
                 },
                 {
-                    "part_of_speech": entry[2],
+                    "part_of_speech": entry[3],
                     "explain": entry[-2],
                     "example": entry[-1],
                 },
@@ -157,6 +159,7 @@ async def retrieved_word_id(word_ids: Iterable[int]) -> List[dict]:
                     "phonetic_us": entry[6],
                     "audio_uk": entry[7],
                     "audio_us": entry[8],
+                    "translate": entry[-4],
                 },
                 {
                     "part_of_speech": entry[3],
