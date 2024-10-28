@@ -1,4 +1,14 @@
 import os, re
+
+if __name__ == "__main__":
+    import sys
+
+    # 获取当前文件所在的目录
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    # 获取上一层目录的路径
+    parent_dir = os.path.dirname(current_dir)
+    # 将上一层目录添加到模块搜索路径中
+    sys.path.append(parent_dir)
 from pathlib import Path
 from datetime import datetime
 from mdict_utils import reader
@@ -17,10 +27,10 @@ from services.dict import get_indexes
 
 
 def insert_word(cursor: sql.engine.Connection, word_idx: int, word: str) -> int:
-    stmt = sql.insert(Word).values(word=word)
+    stmt = sql.insert(Word).values(word=word).returning(Word.id)
     try:
-        cursor.execute(stmt)
-        word_idx += 1
+        word_idx = cursor.execute(stmt).scalar()
+        # word_idx += 1
     except:
         raise ValueError(f"Cannot replicate word({word}, id={word_idx}) in database")
     return word_idx
@@ -39,10 +49,14 @@ def remove_word(cursor: sql.engine.Connection, word_idx: int) -> int:
 def insert_definition(
     cursor: sql.engine.Connection, word_idx: int, definition_idx: int, **kwargs
 ) -> int:
-    stmt = sql.insert(Definition).values(word_id=word_idx, **kwargs)
+    stmt = (
+        sql.insert(Definition)
+        .values(word_id=word_idx, **kwargs)
+        .returning(Definition.id)
+    )
     try:
-        cursor.execute(stmt)
-        definition_idx += 1
+        definition_idx = cursor.execute(stmt).scalar()
+        # definition_idx += 1
     except:
         log.debug(
             f"Fail insert definition(id={definition_idx}) word(id={word_idx}), speech={kwargs['part_of_speech']}"
@@ -57,12 +71,14 @@ def insert_explanation(
     explanation_idx: int,
     **kwargs,
 ) -> int:
-    stmt = sql.insert(Explanation).values(
-        word_id=word_idx, definition_id=definition_idx, **kwargs
+    stmt = (
+        sql.insert(Explanation)
+        .values(word_id=word_idx, definition_id=definition_idx, **kwargs)
+        .returning(Explanation.id)
     )
     try:
-        cursor.execute(stmt)
-        explanation_idx += 1
+        explanation_idx = cursor.execute(stmt).scalar()
+        # explanation_idx += 1
     except:
         log.debug(
             f"Fail insert explanation(id={explanation_idx}) word(id={word_idx}), explain={kwargs['explain']}"
@@ -85,12 +101,14 @@ def insert_example(
     example_idx: int,
     **kwargs,
 ) -> int:
-    stmt = sql.insert(Example).values(
-        word_id=word_idx, explanation_id=explanation_idx, **kwargs
+    stmt = (
+        sql.insert(Example)
+        .values(word_id=word_idx, explanation_id=explanation_idx, **kwargs)
+        .returning(Example.id)
     )
     try:
-        cursor.execute(stmt)
-        example_idx += 1
+        example_idx = cursor.execute(stmt).scalar()
+        # example_idx += 1
     except:
         log.debug(
             f"Fail insert example(id={example_idx}) word(id={word_idx}), example={kwargs['example']}"

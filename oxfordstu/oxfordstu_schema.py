@@ -12,6 +12,8 @@ from sqlalchemy import (
     create_engine,
 )
 from sqlalchemy.orm import DeclarativeBase, Session
+import uuid
+from sqlalchemy.dialects.postgresql import UUID
 
 
 class PartOfSpeech(enum.Enum):
@@ -33,6 +35,8 @@ class Word(Base):
     __tablename__ = "words"
     __table_args__ = (Index("UX_word", "word"),)
     id = Column(Integer, primary_key=True)
+    # uuid is str type!
+    # id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     word = Column(String, unique=True)
 
 
