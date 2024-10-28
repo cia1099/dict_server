@@ -42,7 +42,10 @@ class Word(Base):
 
 class Definition(Base):
     __tablename__ = "definitions"
-    __table_args__ = (Index("UX_speech", "part_of_speech"),)
+    __table_args__ = (
+        Index("UX_speech", "part_of_speech"),
+        UniqueConstraint("word_id", "id", name="definition_unique"),
+    )
     id = Column(Integer, primary_key=True)
     word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
     # part_of_speech = Column(Enum(PartOfSpeech))
@@ -57,6 +60,9 @@ class Definition(Base):
 
 class Explanation(Base):
     __tablename__ = "explanations"
+    __table_args__ = (
+        UniqueConstraint("definition_id", "id", name="explanation_unique"),
+    )
     id = Column(Integer, primary_key=True)
     word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
     definition_id = Column(Integer, ForeignKey("definitions.id"), nullable=False)
@@ -67,6 +73,7 @@ class Explanation(Base):
 
 class Example(Base):
     __tablename__ = "examples"
+    __table_args__ = (UniqueConstraint("explanation_id", "id", name="example_unique"),)
     id = Column(Integer, primary_key=True)
     word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
     explanation_id = Column(Integer, ForeignKey("explanations.id"), nullable=False)
@@ -141,9 +148,10 @@ def test_inflection_search(engine):
 if __name__ == "__main__":
     import os
 
-    os.system("rm oxfordstu.db")
+    # os.system("rm oxfordstu.db")
     DB_URL = "sqlite:///oxfordstu.db"
-    engine = create_engine(DB_URL, echo=False)
+    engine = create_engine(DB_URL, echo=True)
+    # Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     # test_duplicate_word(engine)
-    test_inflection_search(engine)
+    # test_inflection_search(engine)
