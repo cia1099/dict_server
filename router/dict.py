@@ -102,11 +102,15 @@ async def retrieved_word(word: str):
 @router.get("/words")
 async def get_words(id: List[int] = Query(default=[])):
     words = await retrieved_word_id(id)
-    content = json.dumps(words) if len(words) else f"word@{id} not found"
-    return {"status": 200 if len(words) else 404, "content": content}
+    content = (
+        json.dumps(words)
+        if len(words) == len(id)
+        else f"word@{[d for d in id if d not in (w['word_id'] for w in words)]} not found"
+    )
+    return {"status": 200 if len(words) == len(id) else 404, "content": content}
 
 
-@router.get("/words/{word_id}")
+@router.get("/word_id/{word_id}")
 async def get_word_by_id(word_id: int):
     words = await retrieved_word_id([word_id])
     content = json.dumps(words[0]) if len(words) else f"word#{word_id} not found"
@@ -181,11 +185,13 @@ async def retrieved_word_id(word_ids: Iterable[int]) -> List[dict]:
 
 async def a_run():
     async with cursor:
-        cache = await retrieved_word_id(830)
-    print(json.dumps(cache))
+        # cache = await retrieved_word_id([830, 30])
+        # print(len(cache))
+        res = await get_words([830, 30])
+    # print(json.dumps(cache))
 
 
 if __name__ == "__main__":
     import asyncio
 
-    asyncio.run(a_run)
+    asyncio.run(a_run())
