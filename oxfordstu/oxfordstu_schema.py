@@ -147,6 +147,7 @@ def test_inflection_search(engine):
 
 if __name__ == "__main__":
     import os
+    import sqlalchemy as sql
 
     # os.system("rm oxfordstu.db")
     DB_URL = "sqlite:///oxfordstu.db"
@@ -155,3 +156,34 @@ if __name__ == "__main__":
     Base.metadata.create_all(engine)
     # test_duplicate_word(engine)
     # test_inflection_search(engine)
+    """
+    print(sql.insert(Word).values(word="", id=0))
+    print("=" * 10 + "definition" + "=" * 10)
+    print(
+        sql.insert(Definition)
+        .values(
+            word_id=0,
+            **{
+                "part_of_speech": "",
+                "inflection": "",
+                "alphabet_uk": "",
+                "alphabet_us": "",
+                "audio_uk": "",
+                "audio_us": "",
+                "chinese": "",
+            }
+        )
+        .returning(Definition.id)
+    )
+    print("=" * 10 + "explanation" + "=" * 10)
+    print(
+        sql.insert(Explanation)
+        .values(word_id=0, definition_id=0, **{"explain": "", "subscript": ""})
+        .returning(Explanation.id)
+    )
+    print("=" * 10 + "example" + "=" * 10)
+    print(
+        sql.insert(Example).values(word_id=0, explanation_id=0, example="")
+        # .returning(Example.id)
+    )
+"""

@@ -151,6 +151,8 @@ def build_oxfordstu_word(
         PartOfSpeech.adverb.value,
     ]
     if any((speech in alphabets.keys() for speech in word_dict.keys())):
+        if len(word.split(" ")) > 1:
+            raise KeyError(f"{word} is not a vocabulary")
         word_idx = insert_word(cursor, word_idx=word_idx, word=word)
     else:
         raise KeyError(
