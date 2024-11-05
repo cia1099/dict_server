@@ -134,7 +134,7 @@ def test_inflection_search(engine):
         try:
             session.add_all(definitions)
         except:
-            raise "Build table error"
+            raise Exception("Build table error")
         session.commit()
     stmt = sql.select(Definition.word_id).where(
         Definition.inflection.like("%watching%")

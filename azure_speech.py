@@ -2,9 +2,10 @@ import asyncio
 from io import BytesIO
 import pyglet
 from httpx import AsyncClient, HTTPStatusError
+from __init__ import config
 
-SPEECH_REGION = "your azure region"
-SPEECH_KEY = "speech key"
+SPEECH_REGION = config.SPEECH_REGION
+SPEECH_KEY = config.SPEECH_KEY
 
 
 async def speech_azure(text: str):
