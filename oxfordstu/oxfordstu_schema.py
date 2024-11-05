@@ -156,7 +156,7 @@ if __name__ == "__main__":
     Base.metadata.create_all(engine)
     # test_duplicate_word(engine)
     # test_inflection_search(engine)
-    """
+    """ expression inserts
     print(sql.insert(Word).values(word="", id=0))
     print("=" * 10 + "definition" + "=" * 10)
     print(
@@ -186,4 +186,28 @@ if __name__ == "__main__":
         sql.insert(Example).values(word_id=0, explanation_id=0, example="")
         # .returning(Example.id)
     )
+"""
+""" expression fetch word_id
+print(
+    sql.select(
+        Word.id,
+        Word.word,
+        Asset.filename,
+        Definition.part_of_speech,
+        Definition.inflection,
+        Definition.alphabet_uk,
+        Definition.alphabet_us,
+        Definition.audio_uk,
+        Definition.audio_us,
+        Definition.chinese,
+        Explanation.subscript,
+        Explanation.explain,
+        Example.example,
+    )
+    .outerjoin(Asset, Asset.word_id == Word.id)
+    .join(Definition, Word.id == Definition.word_id)
+    .join(Explanation, Explanation.definition_id == Definition.id)
+    .outerjoin(Example, Example.explanation_id == Explanation.id)
+    .where(Word.id.in_([]))
+)
 """

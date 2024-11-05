@@ -10,9 +10,10 @@ if __name__ == "__main__":
 
 import json
 from typing import Iterable, List
+from router.img import convert_asset_url
 from services.dict import trace_word
 from oxfordstu.oxfordstu_schema import *
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 import sqlalchemy as sql
 from database import cursor
 
@@ -100,8 +101,9 @@ async def retrieved_word(word: str):
 
 
 @router.get("/words")
-async def get_words(id: List[int] = Query(default=[])):
+async def get_words(req: Request, id: List[int] = Query(default=[])):
     words = await retrieved_word_id(id)
+    words = [convert_asset_url(w, req) for w in words]
     content = (
         json.dumps(words)
         if len(words) == len(id)
@@ -111,8 +113,9 @@ async def get_words(id: List[int] = Query(default=[])):
 
 
 @router.get("/word_id/{word_id}")
-async def get_word_by_id(word_id: int):
+async def get_word_by_id(word_id: int, req: Request):
     words = await retrieved_word_id([word_id])
+    words = [convert_asset_url(w, req) for w in words]
     content = json.dumps(words[0]) if len(words) else f"word#{word_id} not found"
     return {"status": 200 if len(words) else 404, "content": content}
 
@@ -187,7 +190,7 @@ async def a_run():
     async with cursor:
         # cache = await retrieved_word_id([830, 30])
         # print(len(cache))
-        res = await get_words([830, 30])
+        res = await get_words(Request(), id=[830, 30])
     # print(json.dumps(cache))
 
 

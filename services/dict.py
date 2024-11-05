@@ -14,7 +14,7 @@ DB_URL = "sqlite:///dictionary/oxfordstu.db"
 
 
 def bind_engine(db_url: str):
-    def wrapper(func: callable):
+    def wrapper(func: ...):
         engine = sql.create_engine(db_url)
 
         def execute(*args):
