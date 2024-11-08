@@ -1,4 +1,5 @@
 from pathlib import Path
+from aiofiles import open
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
 
 router = APIRouter()
@@ -8,8 +9,8 @@ router = APIRouter()
 async def dictionary_img_thumb(image_name: str):
     try:
         p = Path(f"dictionary/img/thumb/{image_name}")
-        with open(str(p), "rb") as f:
-            return Response(f.read(), media_type=f"image/{p.suffix[1:]}")
+        async with open(str(p), "rb") as f:
+            return Response(await f.read(), media_type=f"image/{p.suffix[1:]}")
     except:
         return HTTPException(404, detail=f"{p} not found or destroyed")
 

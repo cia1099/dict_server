@@ -38,3 +38,16 @@ location /dict/ {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 ```
+* #### 使用 root_path 配置 FastAPI 应用的前缀
+FastAPI 提供了一个 root_path 配置选项，可以在创建应用实例时指定基础路径前缀。
+```py
+from fastapi import FastAPI
+
+app = FastAPI(root_path="/dict")
+```
+但是，这种方法要求 Nginx 配置路径为 `/dict/` 的所有请求都直接转发给 FastAPI，且不会去除 `/dict`。配置如下：
+```config
+location /dict/ {
+    proxy_pass http://localhost:8866/dict/;
+}
+```

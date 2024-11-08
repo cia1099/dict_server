@@ -19,6 +19,7 @@ aiosqlite = "*"
 pydantic-settings = "*"
 asyncpg = "*"
 aiohttp = "*"
+aiofiles = "*"
 
 [dev-packages]
 black = {extras = ["d"], version = "*"}
