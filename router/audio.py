@@ -26,7 +26,7 @@ def read_ram_chunk(ram: BytesIO, chunk_size: int = 1024 * 1024) -> Iterator[byte
     ram.close()
 
 
-@router.get("/dictionary/audio/{filename}", status_code=206)
+@router.get("/dictionary/audio/{filename}")
 async def dictionary_audio(filename: str):
     p = Path(f"dictionary/audio/{filename}")
     try:
@@ -35,7 +35,7 @@ async def dictionary_audio(filename: str):
         return HTTPException(404, detail="open %s has error" % p)
 
 
-@router.get("/gtts/audio", status_code=206)
+@router.post("/gtts/audio")
 async def gtts_audio(tts: Text2SpeechIn):
     langs = tts.lang.split("-")
     accentMap = {"uk": "co.uk", "au": "com.au"}
@@ -47,7 +47,7 @@ async def gtts_audio(tts: Text2SpeechIn):
     return StreamingResponse(read_ram_chunk(fp), media_type=f"audio/mp3")
 
 
-@router.get("/azure/audio", status_code=206)
+@router.post("/azure/audio")
 async def azure_audio(tts: Text2SpeechIn):
     content = f"""
     <speak version='1.0' xml:lang='en-US'>
