@@ -31,7 +31,7 @@ router = APIRouter()
 
 
 @router.get("/retrieval")
-async def retrieved_word(word: str):
+async def retrieved_word(word: str, req: Request):
     subq = (
         sql.select(Word.id)
         .join(Definition, Word.id == Definition.word_id)
@@ -95,7 +95,7 @@ async def retrieved_word(word: str):
         )
         if not any((d for d in cache if d["word_id"] == entry[0])):
             cache += [w]
-
+    cache = [convert_asset_url(w, req) for w in cache]
     content = json.dumps(cache) if len(cache) else f"{word} not found"
     return {"status": 200 if len(cache) else 404, "content": content}
 
