@@ -5,6 +5,7 @@ class APIConfig(BaseSettings):
     DB_URL: str | None = None
     SPEECH_REGION: str | None = None
     SPEECH_KEY: str | None = None
+    AZURE_OPENAI_API_KEY: str | None = None
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
