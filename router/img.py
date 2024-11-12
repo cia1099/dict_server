@@ -1,5 +1,6 @@
 if __name__ == "__main__":
     import os, sys
+    from PIL import Image
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)
@@ -9,10 +10,11 @@ from io import BytesIO
 from pathlib import Path
 from aiofiles import open
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
-from PIL import Image
 from aiohttp import ClientSession
+from fastapi.responses import StreamingResponse
 
 from __init__ import config
+from router.audio import read_ram_chunk
 
 router = APIRouter()
 
@@ -51,21 +53,28 @@ async def imagener(prompt: str):
         fp = BytesIO()
         async for bytes in res.content.iter_chunked(1024 * 512):
             fp.write(bytes)
-        fp.seek(0)
-        img = Image.open(fp)
+    # TODO if you need revised prompt
+    # return {
+    #     "status": 200,
+    #     "content": json.dumps({"url": url, "revised_prompt": revised_prompt}),
+    # }
+    fp.seek(0)
+    img = Image.open(fp)
     img.show()
     fp.close()
     print(revised_prompt)
 
 
-async def imagen(prompt: str):
+@router.get("/imagen/{size}")
+async def imagen(prompt: str, size: int = 256):
     host = "https://imagener.openai.azure.com"
     endpoint = "/openai/images/generations:submit?api-version=2023-06-01-preview"
     headers = {
         "Content-Type": "application/json",
         "api-key": config.AZURE_OPENAI_API_KEY,
     }
-    body = {"prompt": prompt, "size": "256x256", "n": 1}
+    ssize = "x".join("%d" % (size & (1 << 8 | 1 << 9 | 1 << 10)) for _ in range(2))
+    body = {"prompt": prompt, "size": ssize, "n": 1}
     async with ClientSession(host) as session:
         res = await session.post(endpoint, json=body, headers=headers)
         jobj: dict = await res.json()
@@ -85,10 +94,13 @@ async def imagen(prompt: str):
         fp = BytesIO()
         async for bytes in res.content.iter_chunked(1024 * 512):
             fp.write(bytes)
+    if __name__ != "__main__":
+        return StreamingResponse(read_ram_chunk(fp), media_type=f"image/png")
+    else:
         fp.seek(0)
         img = Image.open(fp)
-    img.show()
-    fp.close()
+        img.show()
+        fp.close()
 
 
 def replace_root(url: str, new_root: str = "dictionary"):
@@ -123,4 +135,4 @@ def convert_asset_url(word_dict: dict, req: Request):
 if __name__ == "__main__":
     prompt = "She's hoping to break the record for the 100 metres.(Please emphasize the 'record' as noun in this sentence)"
     # asyncio.run(imagener(prompt))
-    asyncio.run(imagen(prompt))
+    asyncio.run(imagen(prompt, 600))
