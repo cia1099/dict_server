@@ -1,6 +1,5 @@
 if __name__ == "__main__":
     import os, sys
-    from PIL import Image
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)
@@ -12,6 +11,7 @@ from aiofiles import open
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from aiohttp import ClientSession
 from fastapi.responses import StreamingResponse
+from PIL import Image, ImageDraw, ImageFont
 
 from __init__ import config
 from router.audio import read_ram_chunk
@@ -83,12 +83,29 @@ async def imagen(prompt: str, size: int = 256):
         img_point = endpoint.replace("generations:submit", id).replace(
             "openai", "openai/operations"
         )
-        while jobj["status"] != "succeeded":
+        while jobj["status"] != "succeeded" and jobj["status"] != "failed":
             await asyncio.sleep(1)
             res = await session.get(img_point, headers=headers)
             jobj = await res.json()
             # print(jobj)
-        url = jobj["result"]["data"][0]["url"]
+        if jobj["status"] == "failed":
+            error: dict = jobj["error"]
+            # content = f"({error['code']}){error['message']}"
+            content = "Blocked by sensitive content"
+            img = Image.new("RGB", (size, size), (255, 255, 255))
+            draw = ImageDraw.Draw(img)
+            font_size = 32
+            text_x = (size - font_size * len(content) // 2) // 2
+            text_y = (size - font_size) // 2
+            draw.text((text_x, text_y), content, fill=(255, 0, 0), font_size=font_size)
+            fp = BytesIO()
+            img.save(fp, format="png")
+            return StreamingResponse(read_ram_chunk(fp), media_type=f"image/png")
+
+        if jobj.get("result"):
+            url = jobj["result"]["data"][0]["url"]
+        else:
+            url = jobj["data"][0]["url"]
     async with ClientSession() as client:
         res = await client.get(url)
         fp = BytesIO()
@@ -101,6 +118,35 @@ async def imagen(prompt: str, size: int = 256):
         img = Image.open(fp)
         img.show()
         fp.close()
+
+
+# TODO: calculate words in center image
+def draw_text(size: int):
+    content = "shit man"
+    img = Image.new("RGB", (size, size), (255, 255, 255))
+    draw = ImageDraw.Draw(img)
+    font_size = 40
+    # font = ImageFont.truetype("Arial.ttf", font_size)
+    boxW = size - font_size * 2
+    row = len(content) * font_size // boxW
+    col = boxW // font_size
+    boxH = row * (font_size + font_size // 4)
+    y = (size - boxH // 2) // 2
+    for dy in range(row):
+        for dx in range(len(content)):
+            c = content[dx + dy * col]
+            offset = (
+                dx * font_size // 2 + font_size,
+                y + dy * (font_size + font_size // 4) // 2,
+            )
+            draw.text(offset, c, fill=(255, 0, 0), font_size=font_size)
+
+    # text_x = (size - font_size * len(content) // 2) // 2
+    # text_y = (size - font_size) // 2
+    # draw.multiline_text(
+    #     (text_x, text_y), content, fill=(255, 0, 0), font_size=font_size
+    # )
+    img.show()
 
 
 def replace_root(url: str, new_root: str = "dictionary"):
@@ -133,6 +179,7 @@ def convert_asset_url(word_dict: dict, req: Request):
 
 
 if __name__ == "__main__":
-    prompt = "She's hoping to break the record for the 100 metres.(Please emphasize the 'record' as noun in this sentence)"
+    prompt = "Daylight came in through a chink between the curtains."
     # asyncio.run(imagener(prompt))
-    asyncio.run(imagen(prompt, 600))
+    # asyncio.run(imagen(prompt, 600))
+    draw_text(256)
