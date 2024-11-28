@@ -20,10 +20,10 @@ pydantic-settings = "*"
 asyncpg = "*"
 aiohttp = "*"
 aiofiles = "*"
+pillow = "*"
 
 [dev-packages]
 black = {extras = ["d"], version = "*"}
-pillow = "*"
 
 [requires]
 python_version = "3.12"
