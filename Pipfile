@@ -21,6 +21,8 @@ asyncpg = "*"
 aiohttp = "*"
 aiofiles = "*"
 pillow = "*"
+python-multipart = "*"
+pydub = "*"
 
 [dev-packages]
 black = {extras = ["d"], version = "*"}

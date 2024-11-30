@@ -9,6 +9,9 @@ source venv/bin/activate
 pip install pipenv && pipenv install
 scp .env <remote>:~/dict_server
 scp dictionary/oxfordstu.db <remote>:~/dict_server/dictionary
+# environment
+sudo apt-get install ffmpeg -y
+brew install ffmpeg #MacOS
 ```
 * #### systemd service
 systemd服务的`/usr/lib/systemd/system/monitor.service`文件里只能执行一个脚本，而且这脚本结尾必须是一个持续性的process，不然`.service`会一直重新启动，因为内容有`Restart`，造成错误。\
