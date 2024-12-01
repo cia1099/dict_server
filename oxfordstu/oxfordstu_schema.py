@@ -151,11 +151,14 @@ if __name__ == "__main__":
 
     # os.system("rm oxfordstu.db")
     DB_URL = "sqlite:///oxfordstu.db"
-    engine = create_engine(DB_URL, echo=True)
+    # engine = create_engine(DB_URL, echo=True)
     # Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
+    # Base.metadata.create_all(engine)
     # test_duplicate_word(engine)
     # test_inflection_search(engine)
+    uid = uuid.uuid4()
+    # uid = "-".join(["0" * 8, "0" * 4, "0" * 4, "0" * 4, "0" * 12])
+    print("uid = %s\nlen = %d" % (uid, len(str(uid))))
     """ expression inserts
     print(sql.insert(Word).values(word="", id=0))
     print("=" * 10 + "definition" + "=" * 10)

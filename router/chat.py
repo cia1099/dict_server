@@ -9,7 +9,8 @@ import asyncio
 from io import BytesIO
 import json
 from pathlib import Path
-
+from datetime import datetime
+from typing import IO
 from aiofiles import open as aopen
 from fastapi import (
     APIRouter,
@@ -29,7 +30,7 @@ from models.chat import ChatIn
 router = APIRouter()
 
 
-# @router.post("/chat/{vocabulary}")
+@router.post("/chat/{vocabulary}")
 async def azure_chat(chat: ChatIn, vocabulary: str):
     host = "https://imagener.openai.azure.com"
     endpoint = "/openai/deployments/gpt-35-turbo/chat/completions?api-version=2024-08-01-preview"
@@ -64,10 +65,19 @@ async def azure_chat(chat: ChatIn, vocabulary: str):
         jobj: dict = await res.json()
         # print(jobj)
         talk = jobj["choices"][0]["message"]["content"]
+        created = jobj["created"]
         # print("OpenAI said:\x1b[32m%s\x1b[0m" % talk)
-    ans = {"quiz": "Yes" in talk, "answer": talk}
-    print(json.dumps(ans))
-    return {"status": 201, "content": json.dumps(ans)}
+    micro_now = datetime.now().microsecond
+    created = created * 1000 + micro_now // 1000
+    ans = {
+        "quiz": "Yes" in talk,
+        "answer": talk,
+        "created": created,
+        "user_id": config.CHAT_BOT_UUID,
+    }
+    # print(json.dumps(ans))
+    # return {"status": 200, "content": json.dumps(ans)}
+    return ans
 
 
 @router.post("/chat/speech")
@@ -75,9 +85,9 @@ async def azure_chat(chat: ChatIn, vocabulary: str):
 async def azure_speech(speech: UploadFile = File(...)):
     audio_type = speech.content_type  # req.headers.get("Content-Type")
     if audio_type == "audio/mp3":
-        speech = convert2wav(await speech.read(), format="mp3")
-    # if audio_type != "audio/wav":
-    #     return {"status": 400, "content": f"Unsupported speech file type: {audio_type}"}
+        speech = convert2wav(speech.file, format="mp3")
+    elif audio_type != "audio/wav":
+        return {"status": 400, "content": f"Unsupported speech file type:{audio_type}"}
     header = {
         "Ocp-Apim-Subscription-Key": config.SPEECH_KEY,
         "Content-Type": "audio/wav",
@@ -92,24 +102,19 @@ async def azure_speech(speech: UploadFile = File(...)):
         )
         res.raise_for_status()
         jobj = await res.json()
-        print(jobj)
-    return {"status": 201, "content": json.dumps(jobj)}
+        # print(jobj)
+    return {"status": 200, "content": json.dumps(jobj)}
 
 
-def convert2wav(data: bytes, format: str) -> UploadFile:
-    if format == "mp3":
-        convert: AudioSegment = AudioSegment.from_file(BytesIO(data), format=format)
-    else:
-        raise Exception("can't support format:%s" % format)
+def convert2wav(file: IO[bytes], format: str) -> UploadFile:
+    convert: AudioSegment = AudioSegment.from_file(file, format=format)
     fp = BytesIO()
     convert.export(fp, format="wav")
     fp.seek(0)
     # with open("convert.wav", "wb") as f:
     #     f.write(fp.read())
     # fp.close()
-    return UploadFile(
-        fp,
-    )
+    return UploadFile(fp)
 
 
 async def test_upload(file_name: str):
@@ -145,8 +150,8 @@ if __name__ == "__main__":
     # asyncio.run(chat_azure(ChatIn(text=prompt), vocabulary))
 
     help = "Can you give me tips to help me to do a sentence?"
-    # asyncio.run(azure_chat(ChatIn(text=help, is_help=True), vocabulary))
+    asyncio.run(azure_chat(ChatIn(text=help, is_help=True), vocabulary))
     # asyncio.run(test_upload("audio_test/whatstheweatherlike.wav"))
-    asyncio.run(test_upload("audio_test/apple.mp3"))
+    # asyncio.run(test_upload("audio_test/apple.mp3"))
     # with open("audio_test/apple.mp3", "rb") as f:
     #     convert2wav(f.read(), "mp3")
