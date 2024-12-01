@@ -30,6 +30,40 @@ from models.chat import ChatIn
 router = APIRouter()
 
 
+@router.post("/chat/speech")
+# async def azure_speech(req: Request, speech: bytes = Body(...)):
+async def azure_speech(speech: UploadFile = File(...)):
+    audio_type = speech.content_type  # req.headers.get("Content-Type")
+    if audio_type == "audio/mp3":
+        speech = convert2wav(speech.file, format="mp3")
+    elif audio_type != "audio/wav":
+        return {"status": 400, "content": f"Unsupported speech file type:{audio_type}"}
+    header = {
+        "Ocp-Apim-Subscription-Key": config.SPEECH_KEY,
+        "Content-Type": "audio/wav",
+    }
+    async with ClientSession(
+        f"https://{config.SPEECH_REGION}.stt.speech.microsoft.com"
+    ) as session:
+        res = await session.post(
+            "/speech/recognition/conversation/cognitiveservices/v1?language=en-US&format=simple",
+            data=await speech.read(),
+            headers=header,
+        )
+        res.raise_for_status()
+        jobj: dict = await res.json()
+        # print(jobj)
+    return {
+        "status": 200,
+        "content": json.dumps(
+            {
+                "text": jobj.get("DisplayText", "Recognized speech fail"),
+                "recognize": jobj["RecognitionStatus"] == "Success",
+            }
+        ),
+    }
+
+
 @router.post("/chat/{vocabulary}")
 async def azure_chat(chat: ChatIn, vocabulary: str):
     host = "https://imagener.openai.azure.com"
@@ -80,33 +114,7 @@ async def azure_chat(chat: ChatIn, vocabulary: str):
     return ans
 
 
-@router.post("/chat/speech")
-# async def azure_speech(req: Request, speech: bytes = Body(...)):
-async def azure_speech(speech: UploadFile = File(...)):
-    audio_type = speech.content_type  # req.headers.get("Content-Type")
-    if audio_type == "audio/mp3":
-        speech = convert2wav(speech.file, format="mp3")
-    elif audio_type != "audio/wav":
-        return {"status": 400, "content": f"Unsupported speech file type:{audio_type}"}
-    header = {
-        "Ocp-Apim-Subscription-Key": config.SPEECH_KEY,
-        "Content-Type": "audio/wav",
-    }
-    async with ClientSession(
-        f"https://{config.SPEECH_REGION}.stt.speech.microsoft.com"
-    ) as session:
-        res = await session.post(
-            "/speech/recognition/conversation/cognitiveservices/v1?language=en-HK&format=simple",
-            data=await speech.read(),
-            headers=header,
-        )
-        res.raise_for_status()
-        jobj = await res.json()
-        # print(jobj)
-    return {"status": 200, "content": json.dumps(jobj)}
-
-
-def convert2wav(file: IO[bytes], format: str) -> UploadFile:
+def convert2wav(file: IO[bytes], format: str):
     convert: AudioSegment = AudioSegment.from_file(file, format=format)
     fp = BytesIO()
     convert.export(fp, format="wav")
@@ -123,13 +131,13 @@ async def test_upload(file_name: str):
     form.add_field(
         "speech",
         open(file_name, "rb"),  # 打开文件以二进制形式读取
-        filename=file_name,  # 指定文件名
+        filename=p.name,  # 指定文件名
         content_type=f"audio/{p.suffix[1:]}",  # 指定文件类型
     )
     async with ClientSession("http://127.0.0.1:8000") as session:
         res = await session.post(
             "/chat/speech",
-            # headers={"Content-Type": "audio/wav"},
+            # headers={"Content-Type": "multipart/form-data"},
             # data=await f.read(),
             data=form,
         )
@@ -150,8 +158,8 @@ if __name__ == "__main__":
     # asyncio.run(chat_azure(ChatIn(text=prompt), vocabulary))
 
     help = "Can you give me tips to help me to do a sentence?"
-    asyncio.run(azure_chat(ChatIn(text=help, is_help=True), vocabulary))
+    # asyncio.run(azure_chat(ChatIn(text=help, is_help=True), vocabulary))
     # asyncio.run(test_upload("audio_test/whatstheweatherlike.wav"))
-    # asyncio.run(test_upload("audio_test/apple.mp3"))
-    # with open("audio_test/apple.mp3", "rb") as f:
-    #     convert2wav(f.read(), "mp3")
+    asyncio.run(test_upload("audio_test/fuck_mom.wav"))
+    # with open("audio_test/fuck_mom.m4a", "rb") as f:
+    #     convert2wav(f, "m4a")
