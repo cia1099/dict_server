@@ -84,6 +84,10 @@ async def azure_chat(chat: ChatIn, vocabulary: str):
                 "content": "You are an English tutor. Please keep patience to teach students understand and know English grammar",
             },
             {
+                "role": "user",
+                "content": f"If you are referring to a word or phrase, don't use single quotes('). You could replace them with double quotes(\"). Single quotes will confuse me.",
+            },
+            {
                 "role": "system",
                 "content": f"You need to guide students to know how to use the vocabulary '{vocabulary}'. You can't give any example to student, you should guide them to do it themselves",
             },
@@ -149,17 +153,18 @@ if __name__ == "__main__":
     vocabulary = "apple"
     # prompt = "I like apple company because their products are great and legendary."
     # prompt = "I eat apple juice this morning."
+    # prompt = "To eat an apple every day, you can leave doctor away"
     # prompt = "apple juice"  # correct
     # prompt = "I like the flavor of apples."  # correct
     # prompt = "Can you explain the definition of this word?"
     # prompt = "Can you give me some examples of sentences with the word apple?"
-    # prompt = "I am like a peace of shit"
-    # prompt = "She always poop apples everyday."
-    # asyncio.run(chat_azure(ChatIn(text=prompt), vocabulary))
+    # prompt = "I am like a peace of apple"
+    prompt = "She always poop apples everyday."
+    asyncio.run(azure_chat(ChatIn(text=prompt), vocabulary))
 
     help = "Can you give me tips to help me to do a sentence?"
     # asyncio.run(azure_chat(ChatIn(text=help, is_help=True), vocabulary))
     # asyncio.run(test_upload("audio_test/whatstheweatherlike.wav"))
-    asyncio.run(test_upload("audio_test/fuck_mom.wav"))
+    # asyncio.run(test_upload("audio_test/fuck_mom.wav"))
     # with open("audio_test/fuck_mom.m4a", "rb") as f:
     #     convert2wav(f, "m4a")
