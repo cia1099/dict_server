@@ -75,7 +75,7 @@ async def azure_chat(chat: ChatIn, vocabulary: str):
     prompt = (
         chat.text
         if chat.is_help
-        else f"Does he make a correct example sentence for {vocabulary}? He said '{chat.text}'. Please just answer yes or no. If the answer is no, give the reasons."
+        else f'Do I make a correct example sentence for {vocabulary}? I said "{chat.text}". Please just answer yes or no. If the answer is no, give the reasons.'
     )
     body = {
         "messages": [
@@ -84,16 +84,12 @@ async def azure_chat(chat: ChatIn, vocabulary: str):
                 "content": "You are an English tutor. Please keep patience to teach students understand and know English grammar",
             },
             {
-                "role": "user",
-                "content": f"If you are referring to a word or phrase, don't use single quotes('). You could replace them with double quotes(\"). Single quotes will confuse me.",
-            },
-            {
                 "role": "system",
-                "content": f"You need to guide students to know how to use the vocabulary '{vocabulary}'. You can't give any example to student, you should guide them to do it themselves",
+                "content": f'You need to guide students to know how to use the vocabulary "{vocabulary}". You can\'t give any example to student, you should guide them to do it themselves',
             },
             {
                 "role": "assistant",
-                "content": f"Hello Students. We are going to learn the word '{vocabulary}'. I will watch you make a sentence or paragraph using this word.",
+                "content": f'Hello student. We are going to learn the word "{vocabulary}". I will watch you make a sentence or paragraph using this word.',
             },
             {"role": "user", "content": prompt},
         ]
