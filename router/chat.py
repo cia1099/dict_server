@@ -53,12 +53,14 @@ async def azure_speech(speech: UploadFile = File(...)):
         res.raise_for_status()
         jobj: dict = await res.json()
         # print(jobj)
+    text = jobj.get("DisplayText", "")
+    recognize = jobj["RecognitionStatus"] == "Success" and len(text) > 0
     return {
         "status": 200,
         "content": json.dumps(
             {
-                "text": jobj.get("DisplayText", "Recognized speech fail"),
-                "recognize": jobj["RecognitionStatus"] == "Success",
+                "text": text,
+                "recognize": recognize,
             }
         ),
     }

@@ -9,9 +9,14 @@ if __name__ == "__main__":
     sys.path.append(parent_dir)
 
 import json
-from typing import Iterable, List
+from typing import Iterable, List, Any
 from router.img import convert_asset_url
-from services.dict import trace_word
+from services.dict import (
+    trace_search_result,
+    trace_word,
+    retrieval_expression,
+    retrieval_queue,
+)
 from oxfordstu.oxfordstu_schema import *
 from fastapi import APIRouter, Depends, Query, Request
 import sqlalchemy as sql
@@ -43,56 +48,12 @@ async def retrieved_word(word: str, req: Request):
         )
         .group_by(Word.id)
     )
-    stmt = (
-        sql.select(
-            Word.id,
-            Word.word,
-            Definition.part_of_speech,
-            Definition.inflection,
-            Definition.alphabet_uk,
-            Definition.alphabet_us,
-            Definition.audio_uk,
-            Definition.audio_us,
-            Definition.chinese,
-            Explanation.subscript,
-            Explanation.explain,
-            Example.example,
-        )
-        .join(Definition, Word.id == Definition.word_id)
-        .join(Explanation, Explanation.definition_id == Definition.id)
-        .outerjoin(Example, Example.explanation_id == Explanation.id)
-        .where(Word.id.in_(subq))
-    )
+    stmt = retrieval_expression(subq)
 
     res = await cursor.execute(stmt)
     cache = []
     for entry in res.fetchall():
-        w = trace_word(
-            [
-                {"word_id": entry[0], "word": entry[1]},
-                entry[2],
-                {
-                    "part_of_speech": entry[2],
-                    "inflection": entry[3],
-                    "phonetic_uk": entry[4],
-                    "phonetic_us": entry[5],
-                    "audio_uk": entry[6],
-                    "audio_us": entry[7],
-                    "translate": entry[-4],
-                },
-                {
-                    "part_of_speech": entry[2],
-                    "explain": entry[-2],
-                    "subscript": entry[-3],
-                },
-                {
-                    "part_of_speech": entry[2],
-                    "explain": entry[-2],
-                    "example": entry[-1],
-                },
-            ],
-            cache,
-        )
+        w = trace_word(retrieval_queue(entry), cache)
         if not any((d for d in cache if d["word_id"] == entry[0])):
             cache += [w]
     cache = [convert_asset_url(w, req) for w in cache]
@@ -127,7 +88,49 @@ async def get_word_max_id():
     return {"status": 200, "content": "%d" % max_id.scalar()}
 
 
-async def retrieved_word_id(word_ids: Iterable[int]) -> List[dict]:
+@router.get("/search")
+async def search_word(query: str):
+    word = query.strip()
+    if len(word) == 0:
+        return {"status": 200, "content": "[]"}
+    contains_unicode = any(ord(char) > 127 for char in word)
+    condition = (
+        Definition.chinese.regexp_match(rf"\b{word}")
+        if contains_unicode
+        else (
+            Definition.inflection.regexp_match(rf"\b{word}")
+            | (Word.word == word)
+            | (Explanation.explain == word)
+        )
+    )
+    select = (
+        (Word.id, Word.word, Definition.chinese)
+        if contains_unicode
+        else (Word.id, Word.word, Definition.part_of_speech)
+    )
+    subq = (
+        sql.select(*select)
+        .join(Definition, Word.id == Definition.word_id)
+        .join(Explanation, Explanation.definition_id == Definition.id)
+        .where(condition)
+        .group_by(Definition.id)
+    )
+    res = await cursor.execute(subq)
+    cache = list[dict[str, Any]]()
+    for row in res.fetchall():
+        w = trace_search_result(
+            [{"word_id": row[0], "word": row[1]}, row[2]],
+            cache,
+        )
+        if not any((d for d in cache if d["word_id"] == row[0])):
+            cache += [w]
+
+    for c in cache:
+        c.update({"description": ", ".join(c["description"])})
+    return {"status": 200, "content": json.dumps(cache)}
+
+
+async def retrieved_word_id(word_ids: Iterable[int]) -> list[dict[str, Any]]:
     stmt = (
         sql.select(
             Word.id,
@@ -152,7 +155,7 @@ async def retrieved_word_id(word_ids: Iterable[int]) -> List[dict]:
     )
 
     res = await cursor.execute(stmt)
-    cache = []
+    cache = list[dict[str, Any]]()
     for entry in res.fetchall():
         w = trace_word(
             [
