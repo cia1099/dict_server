@@ -57,7 +57,7 @@ async def retrieved_word(word: str, req: Request):
 
 
 @router.get("/search")
-async def search_word(query: str, page: int = 0, max_length: int = 20):
+async def search_word(req: Request, query: str, page: int = 0, max_length: int = 20):
     word = query.strip()
     if len(word) == 0:
         return {"status": 200, "content": "[]"}
@@ -83,6 +83,7 @@ async def search_word(query: str, page: int = 0, max_length: int = 20):
     )
     res = await cursor.execute(subq)
     words = await retrieved_word_id((row[0] for row in res.fetchall()))
+    words = [convert_asset_url(w, req) for w in words]
     return {"status": 200, "content": json.dumps(words)}
 
 
