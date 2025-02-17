@@ -180,7 +180,7 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
 
 
 @bind_engine(DB_URL)
-def search_word(cursor: sql.engine.Connection, word: str):
+def search_word(cursor: sql.engine.Connection, word: str, page: int = 0):
     contains_unicode = any(ord(char) > 127 for char in word)
     condition = (
         Definition.chinese.regexp_match(rf"\b{word}")
@@ -196,13 +196,18 @@ def search_word(cursor: sql.engine.Connection, word: str):
         if contains_unicode
         else (Word.id, Word.word, Definition.part_of_speech)
     )
+    max_length = 20
     subq = (
         sql.select(*select)
         .join(Definition, Word.id == Definition.word_id)
         .join(Explanation, Explanation.definition_id == Definition.id)
         .where(condition)
         .group_by(Definition.id)
+        .order_by(sql.func.char_length(Word.word).asc())
+        .limit(max_length)
+        .offset(page * max_length)
     )
+    # print(subq)
     res = cursor.execute(subq)
     cache = list[dict[str, Any]]()
     for row in res.fetchall():
@@ -326,7 +331,6 @@ if __name__ == "__main__":
     # test_dictionary("drunk")
     # find_null_alphabets()
     # print(get_indexes())
+    search_word("app", 1)
     # print(json.dumps(search_word("app"), indent=2))
-    text = "   \n55123".strip()
-    print(text)
     # print([ord(char) for char in text])

@@ -11,12 +11,7 @@ if __name__ == "__main__":
 import json
 from typing import Iterable, List, Any
 from router.img import convert_asset_url
-from services.dict import (
-    trace_search_result,
-    trace_word,
-    retrieval_expression,
-    retrieval_queue,
-)
+from services.dict import trace_word, retrieval_expression, retrieval_queue
 from oxfordstu.oxfordstu_schema import *
 from fastapi import APIRouter, Depends, Query, Request
 import sqlalchemy as sql
@@ -61,6 +56,36 @@ async def retrieved_word(word: str, req: Request):
     return {"status": 200 if len(cache) else 404, "content": content}
 
 
+@router.get("/search")
+async def search_word(query: str, page: int = 0, max_length: int = 20):
+    word = query.strip()
+    if len(word) == 0:
+        return {"status": 200, "content": "[]"}
+    contains_unicode = any(ord(char) > 127 for char in word)
+    condition = (
+        Definition.chinese.regexp_match(rf"\b{word}")
+        if contains_unicode
+        else (
+            Definition.inflection.regexp_match(rf"\b{word}")
+            | (Word.word == word)
+            | (Explanation.explain == word)
+        )
+    )
+    subq = (
+        sql.select(Word.id)
+        .join(Definition, Word.id == Definition.word_id)
+        .join(Explanation, Explanation.definition_id == Definition.id)
+        .where(condition)
+        .group_by(Word.id)
+        .order_by(sql.func.char_length(Word.word).asc())
+        .limit(max_length)
+        .offset(page * max_length)
+    )
+    res = await cursor.execute(subq)
+    words = await retrieved_word_id((row[0] for row in res.fetchall()))
+    return {"status": 200, "content": json.dumps(words)}
+
+
 @router.get("/words")
 async def get_words(req: Request, id: List[int] = Query(default=[])):
     words = await retrieved_word_id(id)
@@ -88,48 +113,6 @@ async def get_word_max_id():
     return {"status": 200, "content": "%d" % max_id.scalar()}
 
 
-@router.get("/search")
-async def search_word(query: str):
-    word = query.strip()
-    if len(word) == 0:
-        return {"status": 200, "content": "[]"}
-    contains_unicode = any(ord(char) > 127 for char in word)
-    condition = (
-        Definition.chinese.regexp_match(rf"\b{word}")
-        if contains_unicode
-        else (
-            Definition.inflection.regexp_match(rf"\b{word}")
-            | (Word.word == word)
-            | (Explanation.explain == word)
-        )
-    )
-    select = (
-        (Word.id, Word.word, Definition.chinese)
-        if contains_unicode
-        else (Word.id, Word.word, Definition.part_of_speech)
-    )
-    subq = (
-        sql.select(*select)
-        .join(Definition, Word.id == Definition.word_id)
-        .join(Explanation, Explanation.definition_id == Definition.id)
-        .where(condition)
-        .group_by(Definition.id)
-    )
-    res = await cursor.execute(subq)
-    cache = list[dict[str, Any]]()
-    for row in res.fetchall():
-        w = trace_search_result(
-            [{"word_id": row[0], "word": row[1]}, row[2]],
-            cache,
-        )
-        if not any((d for d in cache if d["word_id"] == row[0])):
-            cache += [w]
-
-    for c in cache:
-        c.update({"description": ", ".join(c["description"])})
-    return {"status": 200, "content": json.dumps(cache)}
-
-
 async def retrieved_word_id(word_ids: Iterable[int]) -> list[dict[str, Any]]:
     stmt = (
         sql.select(
@@ -152,6 +135,7 @@ async def retrieved_word_id(word_ids: Iterable[int]) -> list[dict[str, Any]]:
         .join(Explanation, Explanation.definition_id == Definition.id)
         .outerjoin(Example, Example.explanation_id == Explanation.id)
         .where(Word.id.in_(word_ids))
+        .order_by(sql.func.char_length(Word.word).asc())
     )
 
     res = await cursor.execute(stmt)
