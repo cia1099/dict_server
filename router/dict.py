@@ -57,18 +57,18 @@ async def retrieved_word(word: str, req: Request):
 
 
 @router.get("/search")
-async def search_word(req: Request, query: str, page: int = 0, max_length: int = 20):
-    word = query.strip()
-    if len(word) == 0:
+async def search_word(req: Request, word: str, page: int = 0, max_length: int = 20):
+    query = word.strip()
+    if len(query) == 0:
         return {"status": 200, "content": "[]"}
-    contains_unicode = any(ord(char) > 127 for char in word)
+    contains_unicode = any(ord(char) > 127 for char in query)
     condition = (
-        Definition.chinese.regexp_match(rf"\b{word}")
+        Definition.chinese.regexp_match(rf"\b{query}")
         if contains_unicode
         else (
-            Definition.inflection.regexp_match(rf"\b{word}")
-            | (Word.word == word)
-            | (Explanation.explain == word)
+            Definition.inflection.regexp_match(rf"\b{query}")
+            | (Word.word == query)
+            | (Explanation.explain == query)
         )
     )
     subq = (

@@ -23,6 +23,7 @@ aiofiles = "*"
 pillow = "*"
 python-multipart = "*"
 pydub = "*"
+google-auth = {extras = ["pyopenssl"], version = "*"}
 
 [dev-packages]
 black = {extras = ["d"], version = "*"}

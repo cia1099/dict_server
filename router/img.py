@@ -65,6 +65,59 @@ async def imagener(prompt: str):
     print(revised_prompt)
 
 
+async def vertex_imagen(prompt: str) -> BytesIO:
+    locate = "us-central1"
+    host = f"https://{locate}-aiplatform.googleapis.com"
+    model = "imagegeneration@002"
+    endpoint = f"/v1/projects/china-wall-over/locations/{locate}/publishers/google/models/{model}:predict"
+    headers = {
+        "Content-Type": "application/json; charset=utf-8",
+    }
+    body = {
+        "instances": [{"prompt": prompt}],
+        "parameters": {
+            "sampleCount": 1,
+        },
+    }
+    import json, base64
+    from google.oauth2.service_account import Credentials
+    from google.auth.transport.requests import Request
+
+    credentials = Credentials.from_service_account_file(
+        config.GCLOUD_SERVICE_FILE,
+        scopes=["https://www.googleapis.com/auth/cloud-platform"],
+    )
+    credentials.refresh(Request())
+    # print(f"get token = {credentials.token}")
+    headers.update({"Authorization": f"Bearer {credentials.token}"})
+
+    async with ClientSession(host) as session:
+        res = await session.post(endpoint, json=body, headers=headers)
+        jobj: dict = await res.json()
+        pred = jobj.get("predictions")
+        if pred:
+            bytes = base64.b64decode(pred[0]["bytesBase64Encoded"])
+            fp = BytesIO(bytes)
+            pred[0].update({"bytesBase64Encoded": None})
+            print(json.dumps(pred, indent=4))
+        else:
+            print(json.dumps(jobj, indent=4))
+            fp = generate_error_img(jobj["error"]["message"])
+
+    if pred and __name__ == "__main__":
+        img = Image.open(fp)
+        img.show()
+        fp.close()
+    return fp
+
+
+@router.get("/imagen/punch/card/{index}")
+async def punch_card():
+    prompt = "Generate cute animals to encourage people to finish dairy task\
+          of memorizing vocabulary.\nThe slogan like:\n\
+        AI Vocabulary Punch Card\nMemorize words\nI'm memorizing words with AI Vocabulary, punch with me!"
+
+
 @router.get("/imagen/{size}")
 async def imagen(prompt: str, size: int = 256):
     host = "https://imagener.openai.azure.com"
@@ -92,14 +145,7 @@ async def imagen(prompt: str, size: int = 256):
             error: dict = jobj["error"]
             # content = f"({error['code']}){error['message']}"
             content = "Blocked by sensitive content"
-            img = Image.new("RGB", (size, size), (255, 255, 255))
-            draw = ImageDraw.Draw(img)
-            font_size = 32
-            text_x = (size - font_size * len(content) // 2) // 2
-            text_y = (size - font_size) // 2
-            draw.text((text_x, text_y), content, fill=(255, 0, 0), font_size=font_size)
-            fp = BytesIO()
-            img.save(fp, format="png")
+            fp = generate_error_img(content, size)
             return StreamingResponse(read_ram_chunk(fp), media_type=f"image/png")
 
         if jobj.get("result"):
@@ -118,6 +164,18 @@ async def imagen(prompt: str, size: int = 256):
         img = Image.open(fp)
         img.show()
         fp.close()
+
+
+def generate_error_img(message: str, size: int = 512) -> BytesIO:
+    img = Image.new("RGB", (size, size), (255, 255, 255))
+    draw = ImageDraw.Draw(img)
+    font_size = 32
+    text_x = (size - font_size * len(message) // 2) // 2
+    text_y = (size - font_size) // 2
+    draw.text((text_x, text_y), message, fill=(255, 0, 0), font_size=font_size)
+    fp = BytesIO()
+    img.save(fp, format="png")
+    return fp
 
 
 # TODO: calculate words in center image
@@ -179,7 +237,14 @@ def convert_asset_url(word_dict: dict, req: Request):
 
 
 if __name__ == "__main__":
-    prompt = "Daylight came in through a chink between the curtains."
+    # prompt = "Daylight came in through a chink between the curtains."
+    prompt = "There is an apple juicy on the table."
+    import time
+
+    tic = time.perf_counter()
+    asyncio.run(vertex_imagen(prompt))
+    toc = time.perf_counter()
+    print(f"Elapsed time = {toc-tic:.4f} sec")
     # asyncio.run(imagener(prompt))
     # asyncio.run(imagen(prompt, 600))
-    draw_text(256)
+    # draw_text(256)
