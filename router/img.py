@@ -4,7 +4,7 @@ if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)
     sys.path.append(parent_dir)
-import asyncio
+import asyncio, os, datetime
 from io import BytesIO
 from pathlib import Path
 from aiofiles import open
@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from PIL import Image, ImageDraw, ImageFont
 
 from __init__ import config
-from router.audio import read_ram_chunk
+from router.audio import read_ram_chunk, iter_file
 
 router = APIRouter()
 
@@ -65,10 +65,12 @@ async def imagener(prompt: str):
     print(revised_prompt)
 
 
-async def vertex_imagen(prompt: str) -> BytesIO:
+async def vertex_imagen(
+    prompt: str, model: str = "imagegeneration@002", **kargs
+) -> BytesIO:
     locate = "us-central1"
     host = f"https://{locate}-aiplatform.googleapis.com"
-    model = "imagegeneration@002"
+    model = model
     endpoint = f"/v1/projects/china-wall-over/locations/{locate}/publishers/google/models/{model}:predict"
     headers = {
         "Content-Type": "application/json; charset=utf-8",
@@ -79,6 +81,7 @@ async def vertex_imagen(prompt: str) -> BytesIO:
             "sampleCount": 1,
         },
     }
+    body["parameters"].update(kargs)
     import json, base64
     from google.oauth2.service_account import Credentials
     from google.auth.transport.requests import Request
@@ -107,15 +110,36 @@ async def vertex_imagen(prompt: str) -> BytesIO:
     if pred and __name__ == "__main__":
         img = Image.open(fp)
         img.show()
-        fp.close()
+
     return fp
 
 
 @router.get("/imagen/punch/card/{index}")
-async def punch_card():
-    prompt = "Generate cute animals to encourage people to finish dairy task\
-          of memorizing vocabulary.\nThe slogan like:\n\
-        AI Vocabulary Punch Card\nMemorize words\nI'm memorizing words with AI Vocabulary, punch with me!"
+async def punch_card(index: int):
+    now = datetime.datetime.now()
+    today = datetime.datetime(now.year, now.month, now.day)
+    filename = int(today.timestamp())
+    file = Path(f"punch_card/{filename}_{index:02}.png")
+    if not file.exists():
+        from glob import glob
+
+        rfiles = glob(f"punch_card/*{index:02}.png")
+        for rf in rfiles:
+            os.remove(rf)
+        prompt = "Generate cute animals to encourage people to finish dairy task\
+            of memorizing vocabulary.\nThe slogan could like:\n\
+            AI Vocabulary Punch Card\nMemorize words\nI'm memorizing words with AI Vocabulary, punch with me!"
+        fp = await vertex_imagen(
+            prompt,
+            "imagen-3.0-generate-002",
+            aspectRatio="3:4",
+            personGeneration="dont_allow",
+            enhancePrompt=False,
+        )
+        async with open(str(file), "wb") as f:
+            await f.write(fp.getvalue())
+
+    return StreamingResponse(iter_file(str(file)), media_type="image/png")
 
 
 @router.get("/imagen/{size}")
@@ -242,9 +266,10 @@ if __name__ == "__main__":
     import time
 
     tic = time.perf_counter()
-    asyncio.run(vertex_imagen(prompt))
+    # asyncio.run(vertex_imagen(prompt))
+    asyncio.run(punch_card(1))
     toc = time.perf_counter()
-    print(f"Elapsed time = {toc-tic:.4f} sec")
+    # print(f"Elapsed time = {toc-tic:.4f} sec")
     # asyncio.run(imagener(prompt))
     # asyncio.run(imagen(prompt, 600))
     # draw_text(256)
