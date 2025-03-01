@@ -148,6 +148,21 @@ async def punch_card(index: int):
     )
 
 
+@router.get("/imagen/punch/card/qr_code")
+async def qr_code():
+    try:
+        p = Path(f"punch_card/qr_code.png")
+        async with open(str(p), "rb") as f:
+            file_size = os.fstat(f.fileno()).st_size
+            return Response(
+                await f.read(),
+                media_type=f"image/{p.suffix[1:]}",
+                headers={"Content-Length": str(file_size)},
+            )
+    except:
+        return HTTPException(404, detail=f"{p} not found or destroyed")
+
+
 def generate_error_img(message: str, size: int = 512) -> BytesIO:
     img = Image.new("RGB", (size, size), (255, 255, 255))
     draw = ImageDraw.Draw(img)
