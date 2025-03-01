@@ -101,8 +101,8 @@ async def vertex_imagen(
         if pred:
             bytes = base64.b64decode(pred[0]["bytesBase64Encoded"])
             fp = BytesIO(bytes)
-            pred[0].update({"bytesBase64Encoded": None})
-            print(json.dumps(pred, indent=4))
+            # pred[0].update({"bytesBase64Encoded": None})
+            # print(json.dumps(pred, indent=4))
         else:
             print(json.dumps(jobj, indent=4))
             fp = generate_error_img(jobj["error"]["message"])
@@ -144,50 +144,52 @@ async def punch_card(index: int):
 
 @router.get("/imagen/{size}")
 async def imagen(prompt: str, size: int = 256):
-    host = "https://imagener.openai.azure.com"
-    endpoint = "/openai/images/generations:submit?api-version=2023-06-01-preview"
-    headers = {
-        "Content-Type": "application/json",
-        "api-key": config.AZURE_OPENAI_API_KEY,
-    }
-    ssize = "x".join("%d" % (size & (1 << 8 | 1 << 9 | 1 << 10)) for _ in range(2))
-    body = {"prompt": prompt, "size": ssize, "n": 1}
-    async with ClientSession(host) as session:
-        res = await session.post(endpoint, json=body, headers=headers)
-        jobj: dict = await res.json()
-        # print(jobj)
-        id = jobj["id"]
-        img_point = endpoint.replace("generations:submit", id).replace(
-            "openai", "openai/operations"
-        )
-        while jobj["status"] != "succeeded" and jobj["status"] != "failed":
-            await asyncio.sleep(1)
-            res = await session.get(img_point, headers=headers)
-            jobj = await res.json()
-            # print(jobj)
-        if jobj["status"] == "failed":
-            error: dict = jobj["error"]
-            # content = f"({error['code']}){error['message']}"
-            content = "Blocked by sensitive content"
-            fp = generate_error_img(content, size)
-            return StreamingResponse(read_ram_chunk(fp), media_type=f"image/png")
+    fp = await vertex_imagen(prompt)
+    return StreamingResponse(read_ram_chunk(fp), media_type="image/png")
+    # host = "https://imagener.openai.azure.com"
+    # endpoint = "/openai/images/generations:submit?api-version=2023-06-01-preview"
+    # headers = {
+    #     "Content-Type": "application/json",
+    #     "api-key": config.AZURE_OPENAI_API_KEY,
+    # }
+    # ssize = "x".join("%d" % (size & (1 << 8 | 1 << 9 | 1 << 10)) for _ in range(2))
+    # body = {"prompt": prompt, "size": ssize, "n": 1}
+    # async with ClientSession(host) as session:
+    #     res = await session.post(endpoint, json=body, headers=headers)
+    #     jobj: dict = await res.json()
+    #     # print(jobj)
+    #     id = jobj["id"]
+    #     img_point = endpoint.replace("generations:submit", id).replace(
+    #         "openai", "openai/operations"
+    #     )
+    #     while jobj["status"] != "succeeded" and jobj["status"] != "failed":
+    #         await asyncio.sleep(1)
+    #         res = await session.get(img_point, headers=headers)
+    #         jobj = await res.json()
+    #         # print(jobj)
+    #     if jobj["status"] == "failed":
+    #         error: dict = jobj["error"]
+    #         # content = f"({error['code']}){error['message']}"
+    #         content = "Blocked by sensitive content"
+    #         fp = generate_error_img(content, size)
+    #         return StreamingResponse(read_ram_chunk(fp), media_type=f"image/png")
 
-        if jobj.get("result"):
-            url = jobj["result"]["data"][0]["url"]
-        else:
-            url = jobj["data"][0]["url"]
-    async with ClientSession() as client:
-        res = await client.get(url)
-        fp = BytesIO()
-        async for bytes in res.content.iter_chunked(1024 * 512):
-            fp.write(bytes)
-    if __name__ != "__main__":
-        return StreamingResponse(read_ram_chunk(fp), media_type=f"image/png")
-    else:
-        fp.seek(0)
-        img = Image.open(fp)
-        img.show()
-        fp.close()
+    #     if jobj.get("result"):
+    #         url = jobj["result"]["data"][0]["url"]
+    #     else:
+    #         url = jobj["data"][0]["url"]
+    # async with ClientSession() as client:
+    #     res = await client.get(url)
+    #     fp = BytesIO()
+    #     async for bytes in res.content.iter_chunked(1024 * 512):
+    #         fp.write(bytes)
+    # if __name__ != "__main__":
+    #     return StreamingResponse(read_ram_chunk(fp), media_type=f"image/png")
+    # else:
+    #     fp.seek(0)
+    #     img = Image.open(fp)
+    #     img.show()
+    #     fp.close()
 
 
 def generate_error_img(message: str, size: int = 512) -> BytesIO:
