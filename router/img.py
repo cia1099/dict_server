@@ -4,7 +4,7 @@ if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)
     sys.path.append(parent_dir)
-import asyncio, os, datetime
+import asyncio, datetime, os
 from io import BytesIO
 from pathlib import Path
 from aiofiles import open
@@ -15,6 +15,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from __init__ import config
 from router.audio import read_ram_chunk, iter_file
+from services.gcloud import vertex_imagen, create_punch_cards
 
 router = APIRouter()
 
@@ -24,7 +25,12 @@ async def dictionary_img_thumb(image_name: str):
     try:
         p = Path(f"dictionary/img/thumb/{image_name}")
         async with open(str(p), "rb") as f:
-            return Response(await f.read(), media_type=f"image/{p.suffix[1:]}")
+            file_size = os.fstat(f.fileno()).st_size
+            return Response(
+                await f.read(),
+                media_type=f"image/{p.suffix[1:]}",
+                headers={"Content-Length": str(file_size)},
+            )
     except:
         return HTTPException(404, detail=f"{p} not found or destroyed")
 
@@ -65,87 +71,15 @@ async def imagener(prompt: str):
     print(revised_prompt)
 
 
-async def vertex_imagen(
-    prompt: str, model: str = "imagegeneration@002", **kargs
-) -> BytesIO:
-    locate = "us-central1"
-    host = f"https://{locate}-aiplatform.googleapis.com"
-    model = model
-    endpoint = f"/v1/projects/china-wall-over/locations/{locate}/publishers/google/models/{model}:predict"
-    headers = {
-        "Content-Type": "application/json; charset=utf-8",
-    }
-    body = {
-        "instances": [{"prompt": prompt}],
-        "parameters": {
-            "sampleCount": 1,
-        },
-    }
-    body["parameters"].update(kargs)
-    import json, base64
-    from google.oauth2.service_account import Credentials
-    from google.auth.transport.requests import Request
-
-    credentials = Credentials.from_service_account_file(
-        config.GCLOUD_SERVICE_FILE,
-        scopes=["https://www.googleapis.com/auth/cloud-platform"],
-    )
-    credentials.refresh(Request())
-    # print(f"get token = {credentials.token}")
-    headers.update({"Authorization": f"Bearer {credentials.token}"})
-
-    async with ClientSession(host) as session:
-        res = await session.post(endpoint, json=body, headers=headers)
-        jobj: dict = await res.json()
-        pred = jobj.get("predictions")
-        if pred:
-            bytes = base64.b64decode(pred[0]["bytesBase64Encoded"])
-            fp = BytesIO(bytes)
-            # pred[0].update({"bytesBase64Encoded": None})
-            # print(json.dumps(pred, indent=4))
-        else:
-            print(json.dumps(jobj, indent=4))
-            fp = generate_error_img(jobj["error"]["message"])
-
-    if pred and __name__ == "__main__":
-        img = Image.open(fp)
-        img.show()
-
-    return fp
-
-
-@router.get("/imagen/punch/card/{index}")
-async def punch_card(index: int):
-    now = datetime.datetime.now()
-    today = datetime.datetime(now.year, now.month, now.day)
-    filename = int(today.timestamp())
-    file = Path(f"punch_card/{filename}_{index:02}.png")
-    if not file.exists():
-        from glob import glob
-
-        rfiles = glob(f"punch_card/*{index:02}.png")
-        for rf in rfiles:
-            os.remove(rf)
-        prompt = "Generate cute animals to encourage people to finish dairy task\
-            of memorizing vocabulary.\nThe slogan could like:\n\
-            AI Vocabulary Punch Card\nMemorize words\nI'm memorizing words with AI Vocabulary, punch with me!"
-        fp = await vertex_imagen(
-            prompt,
-            "imagen-3.0-generate-002",
-            aspectRatio="3:4",
-            personGeneration="dont_allow",
-            enhancePrompt=False,
-        )
-        async with open(str(file), "wb") as f:
-            await f.write(fp.getvalue())
-
-    return StreamingResponse(iter_file(str(file)), media_type="image/png")
-
-
 @router.get("/imagen/{size}")
 async def imagen(prompt: str, size: int = 256):
     fp = await vertex_imagen(prompt)
-    return StreamingResponse(read_ram_chunk(fp), media_type="image/png")
+    img_size = fp.getbuffer().nbytes
+    return StreamingResponse(
+        read_ram_chunk(fp),
+        media_type="image/png",
+        headers={"Content-Length": str(img_size)},
+    )
     # host = "https://imagener.openai.azure.com"
     # endpoint = "/openai/images/generations:submit?api-version=2023-06-01-preview"
     # headers = {
@@ -190,6 +124,28 @@ async def imagen(prompt: str, size: int = 256):
     #     img = Image.open(fp)
     #     img.show()
     #     fp.close()
+
+
+@router.get("/imagen/punch/card/{index}")
+async def punch_card(index: int):
+    now = datetime.datetime.now()
+    today = datetime.datetime(now.year, now.month, now.day)
+    filename = int(today.timestamp())
+    file = Path(f"punch_card/{filename}_{index:02}.png")
+    if not file.exists():
+        # from glob import glob
+        # rfiles = glob(f"punch_card/*{index:02}.png")
+        # for rf in rfiles:
+        #     os.remove(rf)
+        os.system("rm -f punch_card/*.png")
+        await create_punch_cards(str(filename))
+
+    file_size = os.path.getsize(file)
+    return StreamingResponse(
+        iter_file(str(file)),
+        media_type="image/png",
+        headers={"Content-Length": str(file_size)},
+    )
 
 
 def generate_error_img(message: str, size: int = 512) -> BytesIO:
