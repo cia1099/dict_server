@@ -144,16 +144,19 @@ async def qr_code():
 @router.get("/imagen/punch/card/{index}")
 async def punch_card(index: int):
     now = datetime.datetime.now()
-    today = datetime.datetime(now.year, now.month, now.day)
-    filename = int(today.timestamp())
+    filename = f"{now.year}{now.month:02}{now.day:02}"
     file = Path(f"punch_card/{filename}_{index:02}.png")
-    if not file.exists():
-        # from glob import glob
-        # rfiles = glob(f"punch_card/*{index:02}.png")
-        # for rf in rfiles:
-        #     os.remove(rf)
-        os.system("rm -f punch_card/*.png")
-        await create_punch_cards(str(filename))
+    while not file.exists():
+        if index == 0:
+            img = generate_error_img("Punch Card still generating...")
+            with file.open("wb") as f:
+                f.write(img.getvalue())
+            try:
+                await create_punch_cards(filename)
+            except:
+                file.unlink(missing_ok=True)
+        else:
+            await asyncio.sleep(3)
 
     file_size = os.path.getsize(file)
     return StreamingResponse(
@@ -240,7 +243,7 @@ if __name__ == "__main__":
 
     tic = time.perf_counter()
     # asyncio.run(vertex_imagen(prompt))
-    asyncio.run(punch_card(1))
+    # asyncio.run(punch_card(1))
     toc = time.perf_counter()
     # print(f"Elapsed time = {toc-tic:.4f} sec")
     # asyncio.run(imagener(prompt))

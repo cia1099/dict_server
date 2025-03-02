@@ -1,9 +1,10 @@
-import json, base64
+import json, base64, os
 from google.oauth2.service_account import Credentials
 from google.auth.transport.requests import Request
 
 from io import BytesIO
 from pathlib import Path
+from datetime import datetime
 from aiofiles import open
 from aiohttp import ClientSession
 from fastapi import HTTPException
@@ -99,3 +100,20 @@ async def create_punch_cards(filename: str):
         else:
             error = jobj["error"]
             raise HTTPException(error["code"], error["message"])
+    remove_past3month_cards()
+
+
+def remove_past3month_cards():
+    def past3months():
+        now = datetime.now()
+        this_year = now.year
+        this_month = now.month
+        for i in range(3, 6):
+            month = this_month - i + (12 if this_month <= i else 0)
+            year = this_year + (-1 if this_month <= i else 0)
+            yield f"{year}{month:02}"
+
+    for m in past3months():
+        os.system(f"rm -f punch_card/{m}*.png")
+        # for file in Path("punch_card").glob(f"{m}*.png"):
+        #     file.unlink(missing_ok=True)
