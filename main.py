@@ -14,4 +14,5 @@ app.include_router(chat_router)
 
 @app.get("/")
 async def hello_word():
+    # return Response("error occur", status_code=404, media_type="text/plain")
     return "Hello Dictionary"

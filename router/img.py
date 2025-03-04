@@ -146,17 +146,18 @@ async def punch_card(index: int):
     now = datetime.datetime.now()
     filename = f"{now.year}{now.month:02}{now.day:02}"
     file = Path(f"punch_card/{filename}_{index:02}.png")
-    while not file.exists():
+    waiting_times = 5
+    while not file.exists() and waiting_times > 0:
+        waiting_times -= 1
         if index == 0:
-            img = generate_error_img("Punch Card still generating...")
-            with file.open("wb") as f:
-                f.write(img.getvalue())
             try:
                 await create_punch_cards(filename)
-            except:
-                file.unlink(missing_ok=True)
+            except HTTPException as err:
+                return err
         else:
             await asyncio.sleep(3)
+    if not file.exists():
+        return HTTPException(404, "Failed generation card")
 
     file_size = os.path.getsize(file)
     return StreamingResponse(

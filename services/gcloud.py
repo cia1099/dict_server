@@ -67,7 +67,7 @@ async def create_punch_cards(filename: str):
     headers = {
         "Content-Type": "application/json; charset=utf-8",
     }
-    prompt = "Generate cute animals to encourage people to finish dairy task\
+    prompt = "Generate cute animals to encourage people to finish daily task\
             of memorizing vocabulary.\nThe slogan could like:\n\
             AI Vocabulary Punch Card\nMemorize words\nI'm memorizing words with AI Vocabulary, punch with me!"
     body = {
