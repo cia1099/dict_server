@@ -32,7 +32,7 @@ async def dictionary_img_thumb(image_name: str):
                 headers={"Content-Length": str(file_size)},
             )
     except:
-        return HTTPException(404, detail=f"{p} not found or destroyed")
+        raise HTTPException(404, detail=f"{p} not found or destroyed")
 
 
 async def imagener(prompt: str):
@@ -138,7 +138,7 @@ async def qr_code():
                 headers={"Content-Length": str(file_size)},
             )
     except:
-        return HTTPException(404, detail=f"{p} not found or destroyed")
+        raise HTTPException(404, detail=f"{p} not found or destroyed")
 
 
 @router.get("/imagen/punch/card/{index}")
@@ -150,14 +150,11 @@ async def punch_card(index: int):
     while not file.exists() and waiting_times > 0:
         waiting_times -= 1
         if index == 0:
-            try:
-                await create_punch_cards(filename)
-            except HTTPException as err:
-                return err
+            await create_punch_cards(filename)
         else:
             await asyncio.sleep(3)
     if not file.exists():
-        return HTTPException(404, "Failed generation card")
+        raise HTTPException(404, "Failed generation card")
 
     file_size = os.path.getsize(file)
     return StreamingResponse(

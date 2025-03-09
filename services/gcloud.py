@@ -47,10 +47,11 @@ async def vertex_imagen(prompt: str) -> BytesIO:
             # pred[0].update({"bytesBase64Encoded": None})
             # print(json.dumps(pred, indent=4))
         else:
-            print(json.dumps(jobj, indent=4))
-            from router.img import generate_error_img
-
-            fp = generate_error_img(jobj["error"]["message"])
+            # print(json.dumps(jobj, indent=4))
+            # from router.img import generate_error_img
+            # fp = generate_error_img(jobj["error"]["message"])
+            err = jobj["error"]
+            raise HTTPException(jobj["code"], err["message"])
 
     if pred and __name__ == "__main__":
         img = Image.open(fp)
@@ -68,7 +69,7 @@ async def create_punch_cards(filename: str):
         "Content-Type": "application/json; charset=utf-8",
     }
     prompt = "Generate cute animals to encourage people to finish daily task\
-            of memorizing vocabulary.\nThe slogan could like:\n\
+            of memorizing vocabulary.\nThe slogan could be:\n\
             AI Vocabulary Punch Card\nMemorize words\nI'm memorizing words with AI Vocabulary, punch with me!"
     body = {
         "instances": [{"prompt": prompt}],

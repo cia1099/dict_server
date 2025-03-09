@@ -32,7 +32,7 @@ async def dictionary_audio(filename: str):
     try:
         return StreamingResponse(iter_file(str(p)), media_type=f"audio/{p.suffix[1:]}")
     except FileNotFoundError:
-        return HTTPException(404, detail="open %s has error" % p)
+        raise HTTPException(404, detail="open %s has error" % p)
 
 
 @router.post("/gtts/audio")
