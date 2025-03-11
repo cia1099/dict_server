@@ -24,6 +24,8 @@ pillow = "*"
 python-multipart = "*"
 pydub = "*"
 google-auth = {extras = ["pyopenssl"], version = "*"}
+firebase-admin = "*"
+python-jose = {extras = ["cryptography"], version = "*"}
 
 [dev-packages]
 black = {extras = ["d"], version = "*"}
