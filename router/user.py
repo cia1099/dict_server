@@ -10,4 +10,8 @@ router = APIRouter()
 async def firebase_login(
     token: Annotated[str, Depends(OAuth2PasswordBearer("firebase"))],
 ):
-    return verify_firebase_token(token)
+    try:
+        access = verify_firebase_token(token)
+    except HTTPException as e:
+        return {"status": e.status_code, "content": e.detail}
+    return {"status": 200, "content": access}
