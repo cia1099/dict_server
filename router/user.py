@@ -1,3 +1,4 @@
+import json
 from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -14,4 +15,4 @@ async def firebase_login(
         access = verify_firebase_token(token)
     except HTTPException as e:
         return {"status": e.status_code, "content": e.detail}
-    return {"status": 200, "content": access}
+    return {"status": 200, "content": json.dumps(access)}
