@@ -8,7 +8,7 @@ from models.role import Role
 from __init__ import config
 
 
-def verify_firebase_token(firebase_token: str | None):
+def verify_firebase_token(firebase_token: str | None) -> dict:
     try:
         firebase = auth.verify_id_token(firebase_token)
         # return firebase
@@ -16,6 +16,7 @@ def verify_firebase_token(firebase_token: str | None):
         email = firebase.get("email", "")
         role = firebase.get("role", "guest")
         token = firebase.get("token", 0)
+        name = firebase.get("name", "TODO Faker")
 
         # 生成 JWT Token
         expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
@@ -23,14 +24,13 @@ def verify_firebase_token(firebase_token: str | None):
         )
         play_load = {"role": role, "token": token, "exp": expire}
         access_token = jwt.encode(play_load, key=config.JWT_SECRETE_KEY)
-        return (
-            {
-                "access_token": access_token,
-                "token_type": "bearer",
-                "uid": uid,
-                "sub": email,
-            },
-        )
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "uid": uid,
+            "name": name,
+            "email": email,
+        }
 
     except Exception as e:
         raise HTTPException(status_code=403, detail=f"Invalid Firebase Token: {str(e)}")
