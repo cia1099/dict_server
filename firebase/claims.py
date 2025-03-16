@@ -18,10 +18,12 @@ def list_users():
 if __name__ == "__main__":
     cred = credentials.Certificate(config.FIREBASE_ADMIN)
     initialize_app(cred)
-    # uid = "sDadHAPRUvW4MCHAfO46L8RwUE23"
-    # auth.set_custom_user_claims(uid, {"role": "tester"})
+    uid = "sDadHAPRUvW4MCHAfO46L8RwUE23"
+    # auth.set_custom_user_claims(uid, {"role": "tester", "name": None})
+    user: auth.UserRecord = auth.get_user(uid)
+    print(user.custom_claims)
     # list_users()
 
-    email = "test123@test.com"
-    user: auth.UserRecord = auth.get_user_by_email(email)
-    print(user)
+    # email = "test123@test.com"
+    # user: auth.UserRecord = auth.get_user_by_email(email)
+    # print(user)

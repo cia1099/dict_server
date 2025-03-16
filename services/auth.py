@@ -8,7 +8,7 @@ from models.role import Role
 from __init__ import config
 
 
-def verify_firebase_token(firebase_token: str | None) -> dict:
+async def verify_firebase_token(firebase_token: str | None) -> dict:
     try:
         firebase = auth.verify_id_token(firebase_token)
         # return firebase
@@ -35,6 +35,19 @@ def verify_firebase_token(firebase_token: str | None) -> dict:
 
     except Exception as e:
         raise HTTPException(status_code=403, detail=f"Invalid Firebase Token: {str(e)}")
+
+
+async def register_firebase(firebase_token: str, name: str | None):
+    try:
+        firebase = auth.verify_id_token(firebase_token)
+        uid = firebase["uid"]
+        auth.set_custom_user_claims(uid, {"role": "civvy", "name": name, "token": 0})
+        return {"status": 200, "content": "Successfully create a User"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Invalid Firebase Token: {str(e)}",
+        )
 
 
 def verify_api_access(

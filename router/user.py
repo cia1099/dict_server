@@ -2,7 +2,7 @@ import json
 from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from fastapi.security import OAuth2PasswordBearer
-from services.auth import verify_firebase_token, verify_api_access
+from services.auth import verify_firebase_token, register_firebase, verify_api_access
 
 router = APIRouter()
 
@@ -12,10 +12,22 @@ async def firebase_login(
     token: Annotated[str, Depends(OAuth2PasswordBearer("firebase"))],
 ):
     try:
-        access = verify_firebase_token(token)
+        customer = await verify_firebase_token(token)
+        return {"status": 200, "content": json.dumps(customer)}
     except HTTPException as e:
         return {"status": e.status_code, "content": e.detail}
-    return {"status": 200, "content": json.dumps(access)}
+
+
+@router.get("/firebase/register")
+async def firebase_register(
+    token: Annotated[str, Depends(OAuth2PasswordBearer("firebase"))],
+    name: str | None = None,
+):
+    try:
+        rep = await register_firebase(token, name)
+        return rep
+    except HTTPException as e:
+        return {"status": e.status_code, "content": e.detail}
 
 
 @router.get("/check/access/token")

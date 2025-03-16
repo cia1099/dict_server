@@ -28,6 +28,6 @@ app.include_router(user_router)
 
 
 @app.get("/")
-async def hello_word():
+async def hello_word(name: str | None = None):
     # return Response("error occur", status_code=404, media_type="text/plain")
-    return "Hello Dictionary"
+    return f"Hello Dictionary {name}"
