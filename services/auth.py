@@ -17,11 +17,12 @@ def verify_firebase_token(firebase_token: str | None) -> dict:
         role = firebase.get("role", "guest")
         token = firebase.get("token", 0)
         name = firebase.get("name", "TODO Faker")
+        auth_time = firebase.get(
+            "auth_time", datetime.datetime.now(datetime.timezone.utc)
+        )
 
         # 生成 JWT Token
-        expire = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
-            days=1
-        )
+        expire = datetime.datetime.fromtimestamp(auth_time) + datetime.timedelta(days=1)
         play_load = {"role": role, "token": token, "exp": expire}
         access_token = jwt.encode(play_load, key=config.JWT_SECRETE_KEY)
         return {

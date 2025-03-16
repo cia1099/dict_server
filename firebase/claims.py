@@ -20,4 +20,8 @@ if __name__ == "__main__":
     initialize_app(cred)
     # uid = "sDadHAPRUvW4MCHAfO46L8RwUE23"
     # auth.set_custom_user_claims(uid, {"role": "tester"})
-    list_users()
+    # list_users()
+
+    email = "test123@test.com"
+    user: auth.UserRecord = auth.get_user_by_email(email)
+    print(user)
