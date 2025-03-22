@@ -1,24 +1,34 @@
 from dataclasses import dataclass
+from enum import StrEnum
+
+
+class Role(StrEnum):
+    GUEST = "guest"
+    CIVVY = "civvy"
+    PRIMARY = "primary"
 
 
 @dataclass
-class Role:
-    role: str
-    token: int
+class Character:
+    def __init__(self, role: Role, uid: str):
+        self.role = role
+        self.uid = uid
 
     @staticmethod
-    def from_dict(obj: dict) -> "Role":
-        role = obj.get("role", "guest")
-        token = obj.get("token", 0)
-        return Role(role, token)
+    def from_dict(obj: dict) -> "Character":
+        role = obj.get("role", Role.GUEST)
+        uid = obj.get("uid", "")
+        return Character(role, uid)
 
     def to_dict(self) -> dict:
         result: dict = {}
         result["role"] = self.role
-        result["token"] = self.token
+        result["uid"] = self.uid
         return result
 
 
 if __name__ == "__main__":
-    role = Role.from_dict({})
-    print(role.to_dict())
+    character = Character.from_dict({"role": "civvy"})
+    c2 = Character.from_dict({"role": "primary"})
+    print(character.to_dict())
+    print(c2.to_dict())
