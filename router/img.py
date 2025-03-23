@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from PIL import Image, ImageDraw, ImageFont
 
 from __init__ import config
-from router.audio import read_ram_chunk, iter_file
+from services.utils import read_ram_chunk, iter_file
 from services.gcloud import vertex_imagen, create_punch_cards
 
 router = APIRouter()
