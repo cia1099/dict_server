@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 @router.get("/dictionary/audio/{filename}")
-async def dictionary_audio(filename: str, _=Depends(dict_auth)):
+async def dictionary_audio(filename: str):
     p = Path(f"dictionary/audio/{filename}")
     try:
         return StreamingResponse(iter_file(str(p)), media_type=f"audio/{p.suffix[1:]}")
@@ -41,7 +41,7 @@ async def gtts_audio(tts: Text2SpeechIn):
 async def azure_audio(tts: Text2SpeechIn, hasToken: bool = Depends(azure_auth)):
     if not hasToken:
         new_tts = Text2SpeechIn(text=tts.text, lang="en-US")
-        return gtts_audio(new_tts)
+        return await gtts_audio(new_tts)
     content = f"""
     <speak version='1.0' xml:lang='en-US'>
         <voice xml:lang='{tts.lang}' xml:gender='{tts.gender}' name='{tts.name}'>

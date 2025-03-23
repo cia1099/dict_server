@@ -1,5 +1,6 @@
 from typing import Annotated
 import datetime, json
+import math
 from firebase_admin import auth
 from fastapi import HTTPException, Depends, status, Request
 from fastapi.security import OAuth2PasswordBearer
@@ -83,7 +84,7 @@ class ApiAuth:
             character.role, -1
         ):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Permission denied")
-        if self.cost_token > 0:
+        if self.cost_token > 1e-6:
             claims = auth.get_user(character.uid).custom_claims or {}
             user_token = claims.get("token", 0.0)
             if user_token < self.cost_token:
@@ -92,7 +93,7 @@ class ApiAuth:
                 # )
                 return False
             user_token -= self.cost_token
-            claims.update({"token": user_token})
+            claims.update({"token": math.floor(user_token * 1e3) / 1e3})
             auth.set_custom_user_claims(character.uid, claims)
         return True
 
