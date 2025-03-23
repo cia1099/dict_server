@@ -115,7 +115,7 @@ async def get_word_by_id(word_id: int, req: Request, _=Depends(dict_auth)):
 
 
 @router.get("/words/max_id")
-async def get_word_max_id():
+async def get_word_max_id(_=Depends(dict_auth)):
     stmt = sql.select(sql.func.count(Word.id))
     max_id = await cursor.execute(stmt)
     return {"status": 200, "content": "%d" % max_id.scalar()}

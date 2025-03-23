@@ -24,10 +24,14 @@ from fastapi import (
 )
 from aiohttp import ClientSession, FormData
 from pydub import AudioSegment
+
+from models.role import Role
+from services.auth import ApiAuth
 from __init__ import config
 from models.chat import ChatIn
 
 router = APIRouter()
+azure_auth = ApiAuth(Role.CIVVY, cost_token=0.1)
 
 
 @router.post("/chat/speech")

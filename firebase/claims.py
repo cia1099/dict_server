@@ -19,7 +19,7 @@ if __name__ == "__main__":
     cred = credentials.Certificate(config.FIREBASE_ADMIN)
     initialize_app(cred)
     uid = "sDadHAPRUvW4MCHAfO46L8RwUE23"
-    # auth.set_custom_user_claims(uid, {"role": "tester", "name": None})
+    # auth.set_custom_user_claims(uid, {"role": "primary", "name": "Tester"})
     user: auth.UserRecord = auth.get_user(uid)
     print(user.custom_claims)
     # list_users()

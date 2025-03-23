@@ -1,7 +1,7 @@
 from typing import Annotated
 import datetime, json
 from firebase_admin import auth
-from fastapi import HTTPException, Depends, status
+from fastapi import HTTPException, Depends, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError, ExpiredSignatureError
 from models.role import Role, Character
@@ -78,14 +78,29 @@ class ApiAuth:
         self.role = role
         self.cost_token = cost_token
 
-    def __call__(self, character: Character = Depends(verify_api_access)):
-        if self.role_index_map[self.role] > ApiAuth.role_index_map[character.role]:
-            raise HTTPException(403, "Permission denied")
+    def __call__(self, character: Character = Depends(verify_api_access)) -> bool:
+        if self.role_index_map.get(self.role, 0) > ApiAuth.role_index_map.get(
+            character.role, -1
+        ):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Permission denied")
         if self.cost_token > 0:
             claims = auth.get_user(character.uid).custom_claims or {}
             user_token = claims.get("token", 0.0)
             if user_token < self.cost_token:
-                raise HTTPException(403, "Don't have enough token")
+                # raise HTTPException(
+                #     status.HTTP_402_PAYMENT_REQUIRED, "Don't have enough token"
+                # )
+                return False
             user_token -= self.cost_token
             claims.update({"token": user_token})
             auth.set_custom_user_claims(character.uid, claims)
+        return True
+
+    async def cost(self, cost_token: float, req: Request):
+        token = await oauth2(req) or ""
+        character = verify_api_access(token)
+        claims = auth.get_user(character.uid).custom_claims or {}
+        user_token = claims.get("token", 0.0)
+        user_token += self.cost_token - cost_token
+        claims.update({"token": user_token})
+        auth.set_custom_user_claims(character.uid, claims)
