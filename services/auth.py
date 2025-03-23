@@ -1,5 +1,6 @@
 from typing import Annotated
 import datetime, json
+import math
 from firebase_admin import auth
 from fastapi import HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer
@@ -78,14 +79,18 @@ class ApiAuth:
         self.role = role
         self.cost_token = cost_token
 
-    def __call__(self, character: Character = Depends(verify_api_access)):
+    def __call__(self, character: Character = Depends(verify_api_access)) -> bool:
         if self.role_index_map[self.role] > ApiAuth.role_index_map[character.role]:
-            raise HTTPException(403, "Permission denied")
-        if self.cost_token > 0:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Permission denied")
+        if self.cost_token > 1e-6:
             claims = auth.get_user(character.uid).custom_claims or {}
             user_token = claims.get("token", 0.0)
             if user_token < self.cost_token:
-                raise HTTPException(403, "Don't have enough token")
+                return False
+                # raise HTTPException(
+                #     status.HTTP_402_PAYMENT_REQUIRED, "Don't have enough token"
+                # )
             user_token -= self.cost_token
-            claims.update({"token": user_token})
+            claims.update({"token": math.floor(user_token * 1e3) / 1e3})
             auth.set_custom_user_claims(character.uid, claims)
+        return True

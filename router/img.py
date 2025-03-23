@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from PIL import Image, ImageDraw, ImageFont
 
 from __init__ import config
-from router.audio import read_ram_chunk, iter_file
+from services.utils import read_ram_chunk, iter_file
 from services.gcloud import vertex_imagen, create_punch_cards
 
 router = APIRouter()
@@ -74,6 +74,7 @@ async def imagener(prompt: str):
 @router.get("/imagen/{size}")
 async def imagen(prompt: str, size: int = 256):
     fp = await vertex_imagen(prompt)
+    cost_token = 2e-2 * 100
     img_size = fp.getbuffer().nbytes
     return StreamingResponse(
         read_ram_chunk(fp),

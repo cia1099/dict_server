@@ -26,13 +26,14 @@ from aiohttp import ClientSession, FormData
 from pydub import AudioSegment
 from __init__ import config
 from models.chat import ChatIn
+from router.audio import audio_auth
 
 router = APIRouter()
 
 
 @router.post("/chat/speech")
 # async def azure_speech(req: Request, speech: bytes = Body(...)):
-async def azure_speech(speech: UploadFile = File(...)):
+async def azure_speech(speech: UploadFile = File(...), _=Depends(audio_auth)):
     audio_type = speech.content_type  # req.headers.get("Content-Type")
     if audio_type == "audio/mp3":
         speech = convert2wav(speech.file, format="mp3")
@@ -102,9 +103,11 @@ async def azure_chat(chat: ChatIn, vocabulary: str):
         # print(jobj)
         talk = jobj["choices"][0]["message"]["content"]
         created = jobj["created"]
+        total_tokens = jobj["usage"]["total_tokens"]
         # print("OpenAI said:\x1b[32m%s\x1b[0m" % talk)
     micro_now = datetime.now().microsecond
     created = created * 1000 + micro_now // 1000
+    cost_tokens = total_tokens * 2e-3
     ans = {
         "quiz": "Yes" in talk,
         "answer": talk,

@@ -6,24 +6,15 @@ from fastapi.responses import StreamingResponse
 from gtts import gTTS
 from aiohttp import ClientSession
 
+from models.role import Role
 from models.text2speech import Text2SpeechIn
+from services.auth import ApiAuth
+from services.utils import iter_file, read_ram_chunk
 from __init__ import config
 
 
 router = APIRouter()
-
-
-def iter_file(file_path: str, chunk_size: int = 1024 * 1024) -> Iterator[bytes]:
-    with open(file_path, mode="rb") as file_like:
-        while data := file_like.read(chunk_size):
-            yield data
-
-
-def read_ram_chunk(ram: BytesIO, chunk_size: int = 1024 * 1024) -> Iterator[bytes]:
-    ram.seek(0)
-    while chunk := ram.read(chunk_size):
-        yield chunk
-    ram.close()
+audio_auth = ApiAuth(Role.CIVVY)
 
 
 @router.get("/dictionary/audio/{filename}")
@@ -48,7 +39,7 @@ async def gtts_audio(tts: Text2SpeechIn):
 
 
 @router.post("/azure/audio")
-async def azure_audio(tts: Text2SpeechIn):
+async def azure_audio(tts: Text2SpeechIn, _=Depends(audio_auth)):
     content = f"""
     <speak version='1.0' xml:lang='en-US'>
         <voice xml:lang='{tts.lang}' xml:gender='{tts.gender}' name='{tts.name}'>
