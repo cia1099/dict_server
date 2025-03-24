@@ -55,6 +55,12 @@ async def register_firebase(firebase_token: str, name: str | None):
         )
 
 
+async def update_money_token(character: Character, money_tokens: float):
+    claims = auth.get_user(character.uid).custom_claims or {}
+    claims.update({"token": money_tokens})
+    auth.set_custom_user_claims(character.uid, claims)
+
+
 def verify_api_access(token: Annotated[str, Depends(oauth2)]):
     try:
         play_load = jwt.decode(token, key=config.JWT_SECRETE_KEY)
@@ -79,18 +85,28 @@ class ApiAuth:
         self.role = role
         self.cost_token = cost_token
 
-    def __call__(self, character: Character = Depends(verify_api_access)) -> bool:
-        if self.role_index_map[self.role] > ApiAuth.role_index_map[character.role]:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, "Permission denied")
+    def __call__(self, character: Character = Depends(verify_api_access)):
+        if character.role == Role.PRIMARY:
+            return character
+        if self.role_index_map.get(self.role, -1) > ApiAuth.role_index_map.get(
+            character.role, 0
+        ):
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN, "You must register to access this feature"
+            )
         if self.cost_token > 1e-6:
             claims = auth.get_user(character.uid).custom_claims or {}
             user_token = claims.get("token", 0.0)
             if user_token < self.cost_token:
-                return False
-                # raise HTTPException(
-                #     status.HTTP_402_PAYMENT_REQUIRED, "Don't have enough token"
-                # )
+                # return False
+                raise HTTPException(
+                    status.HTTP_402_PAYMENT_REQUIRED, "Don't have enough token"
+                )
             user_token -= self.cost_token
             claims.update({"token": math.floor(user_token * 1e3) / 1e3})
             auth.set_custom_user_claims(character.uid, claims)
-        return True
+        return character
+
+
+guest_auth = ApiAuth(Role.GUEST)
+civvy_auth = ApiAuth(Role.CIVVY)

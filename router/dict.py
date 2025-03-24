@@ -12,7 +12,7 @@ import json
 from typing import Iterable, List, Any
 from models.role import Role
 from router.img import convert_asset_url
-from services.auth import ApiAuth
+from services.auth import guest_auth
 from services.dict import trace_word, retrieval_expression, retrieval_queue
 from oxfordstu.oxfordstu_schema import *
 from fastapi import APIRouter, Depends, Query, Request
@@ -30,11 +30,10 @@ from database import cursor
 
 
 router = APIRouter()
-dict_auth = ApiAuth(Role.GUEST)
 
 
 @router.get("/retrieval")
-async def retrieved_word(word: str, req: Request, _=Depends(dict_auth)):
+async def retrieved_word(word: str, req: Request, _=Depends(guest_auth)):
     subq = (
         sql.select(Word.id)
         .join(Definition, Word.id == Definition.word_id)
@@ -61,7 +60,7 @@ async def retrieved_word(word: str, req: Request, _=Depends(dict_auth)):
 
 @router.get("/search")
 async def search_word(
-    req: Request, word: str, page: int = 0, max_length: int = 20, _=Depends(dict_auth)
+    req: Request, word: str, page: int = 0, max_length: int = 20, _=Depends(guest_auth)
 ):
     query = word.strip()
     if len(query) == 0:
@@ -94,7 +93,7 @@ async def search_word(
 
 @router.get("/words")
 async def get_words(
-    req: Request, id: List[int] = Query(default=[]), _=Depends(dict_auth)
+    req: Request, id: List[int] = Query(default=[]), _=Depends(guest_auth)
 ):
     words = await retrieved_word_id(id)
     words = [convert_asset_url(w, req) for w in words]
@@ -107,7 +106,7 @@ async def get_words(
 
 
 @router.get("/word_id/{word_id}")
-async def get_word_by_id(word_id: int, req: Request, _=Depends(dict_auth)):
+async def get_word_by_id(word_id: int, req: Request, _=Depends(guest_auth)):
     words = await retrieved_word_id([word_id])
     words = [convert_asset_url(w, req) for w in words]
     content = json.dumps(words[0]) if len(words) else f"word#{word_id} not found"

@@ -8,13 +8,12 @@ from aiohttp import ClientSession
 
 from models.role import Role
 from models.text2speech import Text2SpeechIn
-from services.auth import ApiAuth
+from services.auth import civvy_auth
 from services.utils import iter_file, read_ram_chunk
 from __init__ import config
 
 
 router = APIRouter()
-audio_auth = ApiAuth(Role.CIVVY)
 
 
 @router.get("/dictionary/audio/{filename}")
@@ -39,7 +38,7 @@ async def gtts_audio(tts: Text2SpeechIn):
 
 
 @router.post("/azure/audio")
-async def azure_audio(tts: Text2SpeechIn, _=Depends(audio_auth)):
+async def azure_audio(tts: Text2SpeechIn, _=Depends(civvy_auth)):
     content = f"""
     <speak version='1.0' xml:lang='en-US'>
         <voice xml:lang='{tts.lang}' xml:gender='{tts.gender}' name='{tts.name}'>

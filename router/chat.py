@@ -8,6 +8,7 @@ if __name__ == "__main__":
 import asyncio
 from io import BytesIO
 import json
+import math
 from pathlib import Path
 from datetime import datetime
 from typing import IO
@@ -26,14 +27,16 @@ from aiohttp import ClientSession, FormData
 from pydub import AudioSegment
 from __init__ import config
 from models.chat import ChatIn
-from router.audio import audio_auth
+from models.role import Character, Role
+from router.user import get_money_tokens
+from services.auth import update_money_token, civvy_auth
 
 router = APIRouter()
 
 
 @router.post("/chat/speech")
 # async def azure_speech(req: Request, speech: bytes = Body(...)):
-async def azure_speech(speech: UploadFile = File(...), _=Depends(audio_auth)):
+async def azure_speech(speech: UploadFile = File(...), _=Depends(civvy_auth)):
     audio_type = speech.content_type  # req.headers.get("Content-Type")
     if audio_type == "audio/mp3":
         speech = convert2wav(speech.file, format="mp3")
@@ -68,7 +71,9 @@ async def azure_speech(speech: UploadFile = File(...), _=Depends(audio_auth)):
 
 
 @router.post("/chat/{vocabulary}")
-async def azure_chat(chat: ChatIn, vocabulary: str):
+async def azure_chat(
+    chat: ChatIn, vocabulary: str, character: Character = Depends(civvy_auth)
+):
     host = "https://imagener.openai.azure.com"
     endpoint = "/openai/deployments/gpt-35-turbo/chat/completions?api-version=2024-08-01-preview"
     headers = {
@@ -97,6 +102,11 @@ async def azure_chat(chat: ChatIn, vocabulary: str):
             {"role": "user", "content": prompt},
         ]
     }
+    money_token = 0.0
+    if character.role != Role.PRIMARY:
+        money_token = await get_money_tokens(character)
+        if money_token < 1e-6:
+            raise HTTPException(402, "You don't have enough tokens")
     async with ClientSession(host) as session:
         res = await session.post(endpoint, json=body, headers=headers)
         jobj: dict = await res.json()
@@ -107,7 +117,13 @@ async def azure_chat(chat: ChatIn, vocabulary: str):
         # print("OpenAI said:\x1b[32m%s\x1b[0m" % talk)
     micro_now = datetime.now().microsecond
     created = created * 1000 + micro_now // 1000
+    # cost token
     cost_tokens = total_tokens * 2e-3
+    money_token -= cost_tokens
+    if character.role != Role.PRIMARY:
+        await update_money_token(
+            character, max(math.floor(money_token * 1e3) / 1e3, 0.0)
+        )
     ans = {
         "quiz": "Yes" in talk,
         "answer": talk,

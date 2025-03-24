@@ -2,8 +2,10 @@ import json
 from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from fastapi.security import OAuth2PasswordBearer
+from firebase_admin import auth
+from models.role import Character
 from services.auth import verify_firebase_token, register_firebase, verify_api_access
-from services.auth import oauth2
+from services.auth import oauth2, civvy_auth
 
 router = APIRouter()
 
@@ -39,3 +41,9 @@ async def check_expire(req: Request):
         return {"status": 200, "content": "Token is still availiable"}
     except HTTPException as e:
         return {"status": e.status_code, "content": e.detail}
+
+
+@router.get("/firebase/claim/token")
+async def get_money_tokens(character: Character = Depends(civvy_auth)):
+    claims = auth.get_user(character.uid).custom_claims or {}
+    return claims.get("token", 0.0)
