@@ -98,12 +98,11 @@ class ApiAuth:
             claims = auth.get_user(character.uid).custom_claims or {}
             user_token = claims.get("token", 0.0)
             if user_token < self.cost_token:
-                # return False
                 raise HTTPException(
                     status.HTTP_402_PAYMENT_REQUIRED, "Don't have enough token"
                 )
             user_token -= self.cost_token
-            claims.update({"token": math.floor(user_token * 1e3) / 1e3})
+            claims.update({"token": max(math.floor(user_token * 1e3) / 1e3, 0.0)})
             auth.set_custom_user_claims(character.uid, claims)
         return character
 

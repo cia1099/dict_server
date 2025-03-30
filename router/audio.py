@@ -40,8 +40,8 @@ async def gtts_audio(tts: Text2SpeechIn):
 @router.post("/azure/audio")
 async def azure_audio(tts: Text2SpeechIn, _=Depends(civvy_auth)):
     content = f"""
-    <speak version='1.0' xml:lang='en-US'>
-        <voice xml:lang='{tts.lang}' xml:gender='{tts.gender}' name='{tts.name}'>
+    <speak version='1.0' xml:lang='{tts.lang}'>
+        <voice xml:lang='{tts.lang}' xml:gender='{tts.gender}' name='{tts.get_voice()}'>
             {tts.text}
         </voice>
     </speak>
