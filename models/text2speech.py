@@ -1,14 +1,12 @@
 from pydantic import BaseModel
 
 
-# class Text2SpeechIn(BaseModel):
-#     text: str
-#     lang: str
-#     gender: str | None = None
-#     name: str | None = None
-
-
 class Text2SpeechIn(BaseModel):
+    text: str
+    lang: str
+    name: str = "Ava"
+    gender: str | None = None
+
     _voicers = {
         "Ava": {
             "en-US": "en-US-AvaMultilingualNeural",
@@ -54,13 +52,7 @@ class Text2SpeechIn(BaseModel):
         },
     }
 
-    def __init__(self, text: str, lang: str, gender: str, name: str):
-        self.gender = gender
-        self.lang = lang
-        self.text = text
-        self._name = name
-
     def get_voice(self):
-        return Text2SpeechIn._voicers.get(self._name, {}).get(
+        return self._voicers.get(self.name, {}).get(
             self.lang, "en-US-AvaMultilingualNeural"
         )

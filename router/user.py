@@ -1,11 +1,15 @@
 import json
 from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
+from fastapi.responses import HTMLResponse
+from aiofiles import open as aopen
+from pathlib import Path
 from fastapi.security import OAuth2PasswordBearer
-from firebase_admin import auth
+from firebase_admin import auth, credentials
 from models.role import Character
 from services.auth import verify_firebase_token, register_firebase, verify_api_access
 from services.auth import oauth2, civvy_auth
+from __init__ import config
 
 router = APIRouter()
 
@@ -47,3 +51,22 @@ async def check_expire(req: Request):
 async def get_money_tokens(character: Character = Depends(civvy_auth)):
     claims = auth.get_user(character.uid).custom_claims or {}
     return claims.get("token", 0.0)
+
+
+@router.get("/firebase/reset/password")
+async def get_reset_password_page():
+    p = Path("templates/reset_password.html")
+    async with aopen(str(p)) as f:
+        html = await f.read()
+        cred = credentials.Certificate(config.FIREBASE_ADMIN)
+        firebaseConfig = {
+            "apiKey": config.FIREBASE_API_KEY,
+            "authDomain": f"{cred.project_id}.firebaseapp.com",
+            "projectId": cred.project_id,
+            "appId": cred.project_id,
+        }
+        html = html.replace(
+            r"//%firebaseConfig%",
+            f"const firebaseConfig = {json.dumps(firebaseConfig)}",
+        )
+        return HTMLResponse(html)
