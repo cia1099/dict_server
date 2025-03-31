@@ -1,7 +1,7 @@
 import json
 from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from aiofiles import open as aopen
 from pathlib import Path
 from fastapi.security import OAuth2PasswordBearer
@@ -53,8 +53,12 @@ async def get_money_tokens(character: Character = Depends(civvy_auth)):
     return claims.get("token", 0.0)
 
 
-@router.get("/firebase/reset/password")
-async def get_reset_password_page():
+@router.get("/firebase/auth/action")
+async def get_reset_password_page(mode: str, oobCode: str):
+    if mode == "verifyEmail":
+        return RedirectResponse(
+            f"https://ai-vocabulary-firebase.firebaseapp.com/__/auth/action?mode={mode}&oobCode={oobCode}"
+        )
     p = Path("templates/reset_password.html")
     async with aopen(str(p)) as f:
         html = await f.read()
