@@ -9,7 +9,6 @@ from firebase_admin import auth
 from models.role import Character
 from services.auth import verify_firebase_token, register_firebase, verify_api_access
 from services.auth import oauth2, civvy_auth
-from __init__ import config
 
 router = APIRouter()
 
@@ -18,6 +17,7 @@ router = APIRouter()
 async def firebase_login(token: Annotated[str, Depends(oauth2)]):
     try:
         customer = await verify_firebase_token(token)
+        _ = verify_api_access(customer["access_token"])
         return {"status": 200, "content": json.dumps(customer)}
     except HTTPException as e:
         return {"status": e.status_code, "content": e.detail}

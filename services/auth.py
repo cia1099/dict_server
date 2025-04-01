@@ -33,6 +33,7 @@ async def verify_firebase_token(firebase_token: str | None) -> dict:
             "uid": uid,
             "name": name if name else "TODO Faker",
             "email": email,
+            "role": role,
         }
 
     except Exception as e:
