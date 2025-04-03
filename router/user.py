@@ -1,6 +1,6 @@
 import json
 from typing import Annotated
-from fastapi import APIRouter, Depends, Request, Response, HTTPException
+from fastapi import APIRouter, Depends, Request, Response, HTTPException, Header
 from fastapi.responses import HTMLResponse, RedirectResponse
 from aiofiles import open as aopen
 from pathlib import Path
@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from firebase_admin import auth
 from models.role import Character
 from services.auth import verify_firebase_token, register_firebase, verify_api_access
-from services.auth import oauth2, civvy_auth
+from services.auth import oauth2, civvy_auth, guest_auth
 
 router = APIRouter()
 
@@ -33,6 +33,11 @@ async def firebase_register(
         return rep
     except HTTPException as e:
         return {"status": e.status_code, "content": e.detail}
+
+
+@router.delete("/firebase/delete")
+async def firebase_delete(uid: str = Header(None), _=Depends(guest_auth)):
+    auth.delete_user(uid)
 
 
 @router.get("/check/access/token")
