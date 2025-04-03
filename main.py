@@ -1,4 +1,5 @@
 from typing import Annotated
+from multiprocessing import Process
 from fastapi import FastAPI, HTTPException, Response, status, Request, Depends
 from router.dict import router as dict_router
 from router.img import router as img_router
@@ -6,6 +7,7 @@ from router.audio import router as audio_router
 from router.chat import router as chat_router
 from router.user import router as user_router
 from database import db_life
+from firebase.helper import clear_expirations
 from __init__ import config
 
 
@@ -14,6 +16,9 @@ def app_life(app: FastAPI):
     from firebase_admin import credentials
 
     cred = credentials.Certificate(config.FIREBASE_ADMIN)
+    p = Process(target=clear_expirations, args=(cred,))
+    p.daemon = False
+    p.start()
     firebase_admin.initialize_app(cred)
 
     return db_life(app)
