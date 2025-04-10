@@ -28,8 +28,7 @@ from pydub import AudioSegment
 from __init__ import config
 from models.chat import ChatIn
 from models.role import Character, Role
-from router.user import get_money_tokens
-from services.auth import update_money_token, civvy_auth
+from services.auth import update_consume_token, get_consume_tokens, civvy_auth
 
 router = APIRouter()
 
@@ -103,8 +102,8 @@ async def azure_chat(
         ]
     }
     money_token = 0.0
-    if character.role != Role.PRIMARY:
-        money_token = await get_money_tokens(character)
+    if character.role != Role.PREMIUM:
+        money_token = await get_consume_tokens(character) or 0.0
         if money_token < 1e-6:
             raise HTTPException(402, "You don't have enough tokens")
     async with ClientSession(host) as session:
@@ -120,8 +119,8 @@ async def azure_chat(
     # cost token
     cost_tokens = total_tokens * 2e-3
     money_token -= cost_tokens
-    if character.role != Role.PRIMARY:
-        await update_money_token(
+    if character.role != Role.PREMIUM:
+        await update_consume_token(
             character, max(math.floor(money_token * 1e3) / 1e3, 0.0)
         )
     ans = {

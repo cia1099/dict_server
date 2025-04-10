@@ -7,13 +7,13 @@ def clear_expirations(cred: credentials.Certificate):
     if not _apps:
         initialize_app(cred)
     ghosts: list[auth.UserRecord] = []
-    now = int(datetime.now().timestamp() * 1e3)
+    now = round(datetime.now().timestamp())
     page = auth.list_users()
     while page:
         for user in cast(Iterable[auth.UserRecord], page.users):
             if len(user.provider_data) == 0 or not user.email_verified:
                 metadata = user.user_metadata
-                expire = now - (metadata.creation_timestamp or 0)
+                expire = now - (metadata.creation_timestamp or 0) // 1000
                 if expire > 1440 * 60:
                     ghosts.append(user)
         page = page.get_next_page()

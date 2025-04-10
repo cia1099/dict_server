@@ -57,9 +57,16 @@ async def register_firebase(firebase_token: str, name: str | None):
         )
 
 
-async def update_money_token(character: Character, money_tokens: float):
+async def get_consume_tokens(character: Character):
     claims = auth.get_user(character.uid).custom_claims or {}
-    claims.update({"token": money_tokens})
+    print(claims.get("token"))
+    consume_tokens = claims.get("token")
+    return consume_tokens
+
+
+async def update_consume_token(character: Character, consume_tokens: float):
+    claims = auth.get_user(character.uid).custom_claims or {}
+    claims.update({"token": consume_tokens})
     auth.set_custom_user_claims(character.uid, claims)
 
 
@@ -88,7 +95,7 @@ class ApiAuth:
         self.cost_token = cost_token
 
     def __call__(self, character: Character = Depends(verify_api_access)):
-        if character.role == Role.PRIMARY:
+        if character.role == Role.PREMIUM:
             return character
         if self.role_index_map.get(self.role, -1) > ApiAuth.role_index_map.get(
             character.role, 0

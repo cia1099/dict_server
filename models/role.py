@@ -5,7 +5,7 @@ from enum import StrEnum
 class Role(StrEnum):
     GUEST = "guest"
     CIVVY = "civvy"
-    PRIMARY = "primary"
+    PREMIUM = "premium"
 
 
 @dataclass
@@ -29,6 +29,6 @@ class Character:
 
 if __name__ == "__main__":
     character = Character.from_dict({"role": "civvy"})
-    c2 = Character.from_dict({"role": "primary"})
+    c2 = Character.from_dict({"role": "premium"})
     print(character.to_dict())
     print(c2.to_dict())

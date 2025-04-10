@@ -7,7 +7,12 @@ from pathlib import Path
 from fastapi.security import OAuth2PasswordBearer
 from firebase_admin import auth
 from models.role import Character
-from services.auth import verify_firebase_token, register_firebase, verify_api_access
+from services.auth import (
+    verify_firebase_token,
+    register_firebase,
+    verify_api_access,
+    get_consume_tokens,
+)
 from services.auth import oauth2, civvy_auth, guest_auth
 
 router = APIRouter()
@@ -52,10 +57,16 @@ async def check_expire(req: Request):
         return {"status": e.status_code, "content": e.detail}
 
 
-@router.get("/firebase/claim/token")
-async def get_money_tokens(character: Character = Depends(civvy_auth)):
-    claims = auth.get_user(character.uid).custom_claims or {}
-    return claims.get("token", 0.0)
+@router.get("/firebase/consume/token")
+async def request_consume_tokens(character: Character = Depends(guest_auth)):
+    consume_tokens = await get_consume_tokens(character)
+    isNone = consume_tokens is None
+    return {
+        "status": 200 if not isNone else 404,
+        "content": (
+            str(consume_tokens) if not isNone else "You don't available consume"
+        ),
+    }
 
 
 @router.get("/firebase/auth/action")

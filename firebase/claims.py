@@ -43,10 +43,12 @@ def clear_expirations(cred: credentials.Certificate):
 if __name__ == "__main__":
     cred = credentials.Certificate(config.FIREBASE_ADMIN)
     app = initialize_app(cred)
-    uid = "sDadHAPRUvW4MCHAfO46L8RwUE23"
-    # auth.set_custom_user_claims(uid, {"role": "tester", "name": None})
-    # user: auth.UserRecord = auth.get_user(uid)
-    # print(user.custom_claims)
+    uid = "kFIiU336lxQjtwSIiPyTA32boPt2"
+    user: auth.UserRecord = auth.get_user(uid)
+    claims = user.custom_claims or {}
+    # claims.update({"role": "premium"})
+    # auth.set_custom_user_claims(uid, claims)
+    print(user.custom_claims)
     # list_users()
     p = Process(target=clear_expirations, args=(cred,))
     p.daemon = False
