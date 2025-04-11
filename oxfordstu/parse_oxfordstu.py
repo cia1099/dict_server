@@ -73,7 +73,9 @@ def get_asset_oxfordstu(soup: BeautifulSoup):
     return path
 
 
-def create_oxfordstu_word(soup: BeautifulSoup, word: str, log: Logger = None) -> dict:
+def create_oxfordstu_word(
+    soup: BeautifulSoup, word: str, log: Logger | None = None
+) -> dict:
     dict_word = dict()
     for h_body in soup.find_all("h-g"):
         try:
@@ -179,7 +181,7 @@ if __name__ == "__main__":
     from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
     from multiprocessing.pool import ThreadPool
 
-    query = "abet"  # "abdomen"
+    query = "record"  # "abdomen"
     mdx_url = "/Users/otto/Downloads/dict/oxfordstu.mdx"
     # print(result)
 
