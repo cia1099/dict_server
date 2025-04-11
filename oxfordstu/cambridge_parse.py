@@ -45,10 +45,16 @@ def create_cambridge_word(mdx_url: str, word: str, log: Logger | None = None) ->
             if pos is not None:
                 pos = pos.get_text(strip=True)
         cn_def = "、".join(
-            [h5.get_text(strip=True) for h5 in entry.find_all("span", class_="cn_def")]
+            [
+                h5.get_text(strip=True)
+                for h5 in entry.find_all("span", class_="cn_def")
+                if h5
+            ]
         )
         phonetics = [
-            h5.get_text(strip=True) for h5 in entry.find_all("span", class_="pron")
+            h5.get_text(strip=True)
+            for h5 in entry.find_all("span", class_="pron")
+            if h5
         ]
         word_defs = []
         for def_block in entry.find_all("div", class_="def-block"):
@@ -57,7 +63,9 @@ def create_cambridge_word(mdx_url: str, word: str, log: Logger | None = None) ->
             gcs = def_block.find("span", class_="gcs")
             subscript = gcs.get_text(strip=True) if gcs else None
             examples = [
-                e.get_text() for e in def_block.find_all("span", class_="en_example")
+                e.get_text()
+                for e in def_block.find_all("span", class_="en_example")
+                if e
             ]
             word_def = {
                 "explanation": explain,
@@ -77,7 +85,7 @@ def create_cambridge_word(mdx_url: str, word: str, log: Logger | None = None) ->
 
 if __name__ == "__main__":
     MDX_URL = "/Users/otto/Downloads/dict/cambridge4.mdx"
-    query = "abet"
+    query = "record"
     word = create_cambridge_word(MDX_URL, query)
     # print(word)
     print(json.dumps(word))

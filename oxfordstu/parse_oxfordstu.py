@@ -82,10 +82,7 @@ def create_oxfordstu_word(
             part_of_speech = h_body.find("z_p").get_text()
         except:
             msg = f"'{word}' doesn't speech in <z_p> tag"
-            if log:
-                log.debug(msg)
-            else:
-                print(msg)
+            log.debug(msg) if log else print(msg)
             continue
         # alphabet = h_body.find("i").get_text() #oxfordstu can't encode utf-8
         word_defs = []
@@ -94,10 +91,7 @@ def create_oxfordstu_word(
                 subscript = n_body.find(re.compile(r"z_(gr|pt)")).get_text()
             except:
                 msg = f"'{word}' No subscript in n-g tag"
-                if log:
-                    log.debug(msg)
-                else:
-                    print(msg)
+                log.debug(msg) if log else print(msg)
                 subscript = h_body.find(re.compile(r"(z_(gr|pt)|gram-g)"))
                 if subscript:
                     subscript = (
@@ -111,10 +105,7 @@ def create_oxfordstu_word(
                 explain = explain.get_text()
             else:
                 msg = f"'{word}'({part_of_speech}, subscript={subscript}) doesn't have <d> tag in <n-g>"
-                if log:
-                    log.warning(msg)
-                else:
-                    print(f"\x1b[43m{msg}\x1b[0m")
+                log.warning(msg) if log else print(msg)
                 continue
             examples = [h5.get_text() for h5 in n_body.find_all("x")]
             word_defs.append(
@@ -129,17 +120,17 @@ def create_oxfordstu_word(
             # raise ValueError(f"doesn't have <i-g> tag")
             audio_names = []
         # print(", ".join(["\x1b[32m%s\x1b[0m" % name for name in audio_names]))
-        dict_word[part_of_speech] = {"def": word_defs, "audio": audio_names}
+        dict_word[part_of_speech] = {
+            "def": word_defs,
+            "audio": dict(zip(["uk", "us"], audio_names)),
+        }
     # ===== dr-g
     for dr_body in soup.find_all("dr-g"):
         try:
             part_of_speech = dr_body.find("z_p").get_text()
         except:
             msg = f"'{word}' doesn't speech in <z_p> tag"
-            if log:
-                log.debug(msg)
-            else:
-                print(msg)
+            log.debug(msg) if log else print(msg)
             continue
         subscript = dr_body.find(re.compile(r"(z_(gr|pt)|gram-g)"))
         if subscript:
@@ -153,10 +144,7 @@ def create_oxfordstu_word(
             explain = explain.get_text()
         else:
             msg = f"'{word}'({part_of_speech}, subscript={subscript}) doesn't have <dr|zd> tag in <dr-g>"
-            if log:
-                log.warning(msg)
-            else:
-                print(f"\x1b[43m{msg}\x1b[0m")
+            log.warning(msg) if log else print(msg)
             continue
         examples = [h5.get_text() for h5 in dr_body.find_all("x")]
         word_def = {
@@ -170,7 +158,10 @@ def create_oxfordstu_word(
             audio_names = [h["href"].replace("sound", "oxfordstu") for h in hrefs]
         except:
             audio_names = []
-        dict_word[part_of_speech] = {"def": [word_def], "audio": audio_names}
+        dict_word[part_of_speech] = {
+            "def": [word_def],
+            "audio": dict(zip(["uk", "us"], audio_names)),
+        }
 
     # print(json.dumps(dict_word))
     return dict_word
@@ -181,7 +172,7 @@ if __name__ == "__main__":
     from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
     from multiprocessing.pool import ThreadPool
 
-    query = "record"  # "abdomen"
+    query = "abet"  # "abdomen"
     mdx_url = "/Users/otto/Downloads/dict/oxfordstu.mdx"
     # print(result)
 
