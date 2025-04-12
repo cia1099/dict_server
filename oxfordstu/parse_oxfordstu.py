@@ -130,16 +130,20 @@ def create_oxfordstu_word(
             type_name = revout.find("revout").get_text()
             phrases = []
             for body in revout.find_all(re.compile(r"(pv|id)-g")):
-                phrase = body.find(re.compile(r"pv|id")).get_text()
-                explain = body.find("d").get_text()
-                examples = [h5.get_text() for h5 in body.find_all("x")]
-                phrases.append(
-                    {
-                        "phrase": phrase,
-                        "explanation": explain,
-                        "examples": examples,
-                    }
-                )
+                try:
+                    phrase = body.find(re.compile(r"pv|id")).get_text()
+                    explain = body.find("d").get_text()
+                    examples = [h5.get_text() for h5 in body.find_all("x")]
+                    phrases.append(
+                        {
+                            "phrase": phrase,
+                            "explanation": explain,
+                            "examples": examples,
+                        }
+                    )
+                except:
+                    msg = f"{word} fetch phrase error"
+                    log.debug(msg) if log else print(msg)
             dict_word[type_name] = phrases
 
     # ===== dr-g

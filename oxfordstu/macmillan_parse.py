@@ -56,12 +56,22 @@ def create_macmillan_word(mdx_url: str, word: str, log: Logger | None = None) ->
             "tenses": tenses if len(tenses) > 0 else None,
             "audio": audio_file if len(audio_file) > 0 else None,
         }
+    # ====phrases
+    phrases = [
+        p.get_text(strip=True)
+        for phrase in soup.find_all(
+            "div", re.compile(r"(phrases|phrasal-verbs)-container")
+        )
+        for p in phrase.find_all("a")
+        if p
+    ]
+    dict_word["phrases"] = phrases
 
     return dict_word
 
 
 if __name__ == "__main__":
     MDX_URL = "/Users/otto/Downloads/dict/MacmillanEnEn.mdx"
-    query = "drink"
+    query = "abet"
     word = create_macmillan_word(MDX_URL, query)
     print(json.dumps(word))
