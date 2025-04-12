@@ -77,22 +77,22 @@ def create_oxfordstu_word(
     soup: BeautifulSoup, word: str, log: Logger | None = None
 ) -> dict:
     dict_word = dict()
-    for h_body in soup.find_all("h-g"):
+    for entry in soup.find_all("entry"):
         try:
-            part_of_speech = h_body.find("z_p").get_text()
+            part_of_speech = entry.find("z_p").get_text()
         except:
             msg = f"'{word}' doesn't speech in <z_p> tag"
             log.debug(msg) if log else print(msg)
             continue
-        # alphabet = h_body.find("i").get_text() #oxfordstu can't encode utf-8
+        # alphabet = entry.find("i").get_text() #oxfordstu can't encode utf-8
         word_defs = []
-        for n_body in h_body.find_all("n-g"):
+        for n_body in entry.find_all("n-g"):
             try:
                 subscript = n_body.find(re.compile(r"z_(gr|pt)")).get_text()
             except:
                 msg = f"'{word}' No subscript in n-g tag"
                 log.debug(msg) if log else print(msg)
-                subscript = h_body.find(re.compile(r"(z_(gr|pt)|gram-g)"))
+                subscript = entry.find(re.compile(r"(z_(gr|pt)|gram-g)"))
                 if subscript:
                     subscript = (
                         "".join([f"({n5.get_text()})" for n5 in n_body.find_all("z_s")])
@@ -113,7 +113,7 @@ def create_oxfordstu_word(
             )
 
         try:
-            i_body = h_body.find("i-g")
+            i_body = entry.find("i-g")
             hrefs = i_body.find_all("a", href=re.compile(r"sound://*"))
             audio_files = [h["href"].replace("sound", "oxfordstu") for h in hrefs]
         except:
@@ -124,6 +124,24 @@ def create_oxfordstu_word(
             "def": word_defs,
             "audio": dict(zip(["uk", "us"], audio_files)),
         }
+        # ==== phrase or idioms
+        revout = entry.find(re.compile(r"(pvs|ids)-g"))
+        if revout:
+            type_name = revout.find("revout").get_text()
+            phrases = []
+            for body in revout.find_all(re.compile(r"(pv|id)-g")):
+                phrase = body.find(re.compile(r"pv|id")).get_text()
+                explain = body.find("d").get_text()
+                examples = [h5.get_text() for h5 in body.find_all("x")]
+                phrases.append(
+                    {
+                        "phrase": phrase,
+                        "explanation": explain,
+                        "examples": examples,
+                    }
+                )
+            dict_word[type_name] = phrases
+
     # ===== dr-g
     for dr_body in soup.find_all("dr-g"):
         try:
@@ -203,6 +221,6 @@ if __name__ == "__main__":
     _, pron_dict = get_cambridge_chinese(query)
     tense, p2 = get_macmillan_tense(query)
     print(json.dumps(oxfordstu_word))
-    print(pron_dict)
-    print(p2)
+    # print(pron_dict)
+    # print(p2)
     print(f"Elapsed = \x1b[32m{(time()-tic)*1e3:.3f}\x1b[0m msec")
