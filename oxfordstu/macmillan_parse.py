@@ -26,6 +26,8 @@ def create_macmillan_word(mdx_url: str, word: str, log: Logger | None = None) ->
         )
         pron = entry.find("span", class_="pron")
         phonetic = pron.get_text(strip=True) if pron else None
+        hrefs = entry.find_all("a", href=re.compile(r"sound://*"))
+        audio_file = "".join([h["href"].replace("sound", "macmillan") for h in hrefs])
         word_defs = []
         for body in entry.find_all("div", class_="sense"):
             definition = body.find("span", class_="definition")
@@ -52,6 +54,7 @@ def create_macmillan_word(mdx_url: str, word: str, log: Logger | None = None) ->
             "def": word_defs,
             "phonetic": phonetic,
             "tenses": tenses if len(tenses) > 0 else None,
+            "audio": audio_file if len(audio_file) > 0 else None,
         }
 
     return dict_word

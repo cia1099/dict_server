@@ -115,14 +115,14 @@ def create_oxfordstu_word(
         try:
             i_body = h_body.find("i-g")
             hrefs = i_body.find_all("a", href=re.compile(r"sound://*"))
-            audio_names = [h["href"].replace("sound", "oxfordstu") for h in hrefs]
+            audio_files = [h["href"].replace("sound", "oxfordstu") for h in hrefs]
         except:
             # raise ValueError(f"doesn't have <i-g> tag")
-            audio_names = []
-        # print(", ".join(["\x1b[32m%s\x1b[0m" % name for name in audio_names]))
+            audio_files = []
+        # print(", ".join(["\x1b[32m%s\x1b[0m" % name for name in audio_files]))
         dict_word[part_of_speech] = {
             "def": word_defs,
-            "audio": dict(zip(["uk", "us"], audio_names)),
+            "audio": dict(zip(["uk", "us"], audio_files)),
         }
     # ===== dr-g
     for dr_body in soup.find_all("dr-g"):
@@ -155,12 +155,12 @@ def create_oxfordstu_word(
         try:
             i_body = dr_body.find("i-g")
             hrefs = i_body.find_all("a", href=re.compile(r"sound://*"))
-            audio_names = [h["href"].replace("sound", "oxfordstu") for h in hrefs]
+            audio_files = [h["href"].replace("sound", "oxfordstu") for h in hrefs]
         except:
-            audio_names = []
+            audio_files = []
         dict_word[part_of_speech] = {
             "def": [word_def],
-            "audio": dict(zip(["uk", "us"], audio_names)),
+            "audio": dict(zip(["uk", "us"], audio_files)),
         }
 
     # print(json.dumps(dict_word))
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
     from multiprocessing.pool import ThreadPool
 
-    query = "abet"  # "abdomen"
+    query = "absent"  # "abdomen"
     mdx_url = "/Users/otto/Downloads/dict/oxfordstu.mdx"
     # print(result)
 
