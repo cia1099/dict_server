@@ -1,11 +1,20 @@
+if __name__ == "__main__":
+    import sys, os
+
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from mdict_utils import reader
 from bs4 import BeautifulSoup
 import re, json
 from logging import Logger
+from oxfordstu import macmillan_URL
 
 
-def create_macmillan_word(mdx_url: str, word: str, log: Logger | None = None) -> dict:
-    res = reader.query(mdx_url, word)
+def create_macmillan_word(
+    word: str, mdx_url: str | None = None, log: Logger | None = None
+) -> dict:
+    MDX_URL = mdx_url if mdx_url else macmillan_URL
+    res = reader.query(MDX_URL, word)
     soup = BeautifulSoup(res, "lxml")
     dict_word = dict()
     for entry in soup.find_all("div", class_="homograph"):
@@ -72,6 +81,6 @@ def create_macmillan_word(mdx_url: str, word: str, log: Logger | None = None) ->
 
 if __name__ == "__main__":
     MDX_URL = "/Users/otto/Downloads/dict/MacmillanEnEn.mdx"
-    query = "abet"
-    word = create_macmillan_word(MDX_URL, query)
+    query = "the drink"
+    word = create_macmillan_word(query)
     print(json.dumps(word))

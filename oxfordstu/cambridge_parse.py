@@ -1,12 +1,20 @@
+if __name__ == "__main__":
+    import sys, os
+
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from mdict_utils import reader
 from bs4 import BeautifulSoup
 import re, json
 from pathlib import Path
 from logging import Logger
+from oxfordstu import cambridge_URL
 
 
-def create_cambridge_word(mdx_url: str, word: str, log: Logger | None = None) -> dict:
-    res = reader.query(mdx_url, word)
+def create_cambridge_word(
+    word: str, mdx_url: str | None = None, log: Logger | None = None
+) -> dict:
+    MDX_URL = mdx_url if mdx_url else cambridge_URL
+    res = reader.query(MDX_URL, word)
     soup = BeautifulSoup(res, "lxml")
     dict_word = dict()
     for entry in soup.find_all("div", class_="entry-body__el"):
@@ -80,7 +88,7 @@ def convert_subscript(subscript: str | None):
 
 if __name__ == "__main__":
     MDX_URL = "/Users/otto/Downloads/dict/cambridge4.mdx"
-    query = "record"
-    word = create_cambridge_word(MDX_URL, query)
+    query = "off the record"
+    word = create_cambridge_word(query, mdx_url=MDX_URL)
     # print(word)
     print(json.dumps(word))
