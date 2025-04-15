@@ -27,6 +27,7 @@ from idioms_phrases import build_macmillan_phrase
 from model import PartWord, Thesaurus, Def
 from services.dict import get_indexes
 from insert_db import *
+from oxfordstu import oxfordstu_URL
 
 
 def build_oxfordstu_word(
@@ -216,7 +217,7 @@ def modified_null_alphabet(cursor: sql.engine.Connection):
 if __name__ == "__main__":
     os.system("rm oxfordstu.db*")
     DB_URL = "sqlite:///oxfordstu.db"
-    MDX_URL = "/Users/otto/Downloads/dict/oxfordstu.mdx"
+    MDX_URL = oxfordstu_URL
     # cmd rm dict_oxfordstu.log && python3 oxfordstu/create_oxfordstu_db.py
 
     engine = create_engine(DB_URL, echo=False)
