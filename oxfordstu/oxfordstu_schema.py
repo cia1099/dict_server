@@ -4,10 +4,12 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
+    Float,
     ForeignKey,
     Index,
     Enum,
     UniqueConstraint,
+    CheckConstraint,
     # ARRAY, #only support postgresql
     create_engine,
 )
@@ -38,6 +40,7 @@ class Word(Base):
     # uuid is str type!
     # id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     word = Column(String, unique=True)
+    frequency = Column(Float, default=None)
 
 
 class Definition(Base):
@@ -55,17 +58,23 @@ class Definition(Base):
     alphabet_uk = Column(String)
     audio_us = Column(String)
     audio_uk = Column(String)
-    chinese = Column(String)
+    synonyms = Column(String)
+    antonyms = Column(String)
 
 
 class Explanation(Base):
     __tablename__ = "explanations"
     __table_args__ = (
-        UniqueConstraint("definition_id", "id", name="explanation_unique"),
+        UniqueConstraint("definition_id", "phrase_id", name="explanation_unique"),
+        CheckConstraint(
+            "(definition_id IS NOT NULL AND phrase_id IS NULL) OR (definition_id IS NULL AND phrase_id IS NOT NULL)",
+            name="only_one_fk_not_null",
+        ),
     )
     id = Column(Integer, primary_key=True)
     word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
-    definition_id = Column(Integer, ForeignKey("definitions.id"), nullable=False)
+    definition_id = Column(Integer, ForeignKey("definitions.id"), nullable=True)
+    phrase_id = Column(Integer, ForeignKey("phrases.id"), nullable=True)
     explain = Column(String, nullable=False)
     subscript = Column(String, nullable=True, default=None)
     create_at = Column(Integer, default=int(datetime.now().timestamp()), nullable=False)
@@ -73,7 +82,9 @@ class Explanation(Base):
 
 class Example(Base):
     __tablename__ = "examples"
-    __table_args__ = (UniqueConstraint("explanation_id", "id", name="example_unique"),)
+    __table_args__ = (
+        UniqueConstraint("explanation_id", "id", name="explanation_unique"),
+    )
     id = Column(Integer, primary_key=True)
     word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
     explanation_id = Column(Integer, ForeignKey("explanations.id"), nullable=False)
@@ -89,6 +100,34 @@ class Asset(Base):
     id = Column(Integer, primary_key=True)
     word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
     filename = Column(String, nullable=False)
+
+
+class Translation(Base):
+    __tablename__ = "translations"
+    __table_args__ = (
+        UniqueConstraint("word_id", "definition_id", name="definition_unique"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    definition_id = Column(Integer, ForeignKey("definitions.id"), nullable=False)
+    word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
+    zh_CN = Column(String)
+    zh_TW = Column(String)
+    ja_JP = Column(String)
+    ko_KR = Column(String)
+    vi_VN = Column(String)
+    th_TH = Column(String)
+    ar_SA = Column(String)
+
+
+class Phrase(Base):
+    __tablename__ = "phrases"
+    __table_args__ = (UniqueConstraint("id", "word_id", name="phrase_unique"),)
+    id = Column(Integer, primary_key=True)
+    word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
+    phrase = Column(String, nullable=False)
+    part_of_speech = Column(String, nullable=False)
+    frequency = Column(Float, default=None)
 
 
 def test_duplicate_word(engine):

@@ -5,63 +5,6 @@ from pathlib import Path
 from logging import Logger
 
 
-def get_alphabet(soup: BeautifulSoup) -> dict:
-    pron_dict = dict()
-    for pos_header in soup.find_all("div", class_="pos-header"):
-        pos = pos_header.find("span", class_="pos").get_text()
-        # American phonetic at last
-        # pron = pos_header.find_all("span", class_="pron")[-1]
-        # pron_dict[pos] = pron.get_text()
-
-        prons = [h5.get_text() for h5 in pos_header.find_all("span", class_="pron")]
-        if len(prons) > 0:
-            pron_dict[pos] = prons
-    # print(get_cambridge_chinese(word))
-    return pron_dict
-
-
-def get_cambridge_chinese(word: str) -> tuple[dict]:
-    mdx_url = "/Users/otto/Downloads/dict/cambridge4.mdx"
-    res = reader.query(mdx_url, word)
-    soup = BeautifulSoup(res, "lxml")
-    cn_dict = dict()
-    for entry in soup.find_all("div", class_="entry-body__el"):
-        try:
-            pos = entry.find("span", class_="pos").get_text()
-        except:
-            # print("No subscript in entry-body__el")
-            pos = soup.find("span", class_="pos")
-            if pos is not None:
-                pos = pos.get_text()
-        cn_def = "、".join(
-            [h5.get_text() for h5 in entry.find_all("span", class_="cn_def")]
-        )
-        cn_dict[pos] = cn_def
-
-    return cn_dict, get_alphabet(soup)
-
-
-def get_macmillan_tense(word: str) -> tuple[dict]:
-    mdx_url = "/Users/otto/Downloads/dict/MacmillanEnEn.mdx"
-    res = reader.query(mdx_url, word)
-    soup = BeautifulSoup(res, "lxml")
-    dict_tense = dict()
-    dict_pron = dict()
-    for body in soup.find_all("div", class_="dict-american"):
-        try:
-            pos = body.find("span", class_="part-of-speech-ctx").get_text()
-        except:
-            continue
-        tenses = ", ".join(
-            [h5.get_text() for h5 in body.find_all("span", class_="inflection-entry")]
-        )
-        prons = [h5.get_text() for h5 in body.find_all("span", class_="pron")]
-        dict_tense[pos] = tenses if len(tenses) > 0 else None
-        dict_pron[pos] = list(map(lambda s: s.replace(" ", ""), prons))
-    # print(json.dumps(dict_tense))
-    return dict_tense, dict_pron
-
-
 def get_asset_oxfordstu(soup: BeautifulSoup):
     path = None
     try:
@@ -124,27 +67,27 @@ def create_oxfordstu_word(
             "def": word_defs,
             "audio": dict(zip(["uk", "us"], audio_files)),
         }
-        # ==== phrase or idioms
-        revout = entry.find(re.compile(r"(pvs|ids)-g"))
-        if revout:
-            type_name = revout.find("revout").get_text()
-            phrases = []
-            for body in revout.find_all(re.compile(r"(pv|id)-g")):
-                try:
-                    phrase = body.find(re.compile(r"pv|id")).get_text()
-                    explain = body.find("d").get_text()
-                    examples = [h5.get_text() for h5 in body.find_all("x")]
-                    phrases.append(
-                        {
-                            "phrase": phrase,
-                            "explanation": explain,
-                            "examples": examples,
-                        }
-                    )
-                except:
-                    msg = f"{word} fetch phrase error"
-                    log.debug(msg) if log else print(msg)
-            dict_word[type_name] = phrases
+        # # ==== phrase or idioms
+        # revout = entry.find(re.compile(r"(pvs|ids)-g"))
+        # if revout:
+        #     type_name = revout.find("revout").get_text()
+        #     phrases = []
+        #     for body in revout.find_all(re.compile(r"(pv|id)-g")):
+        #         try:
+        #             phrase = body.find(re.compile(r"pv|id")).get_text()
+        #             explain = body.find("d").get_text()
+        #             examples = [h5.get_text() for h5 in body.find_all("x")]
+        #             phrases.append(
+        #                 {
+        #                     "phrase": phrase,
+        #                     "explanation": explain,
+        #                     "examples": examples,
+        #                 }
+        #             )
+        #         except:
+        #             msg = f"{word} fetch phrase error"
+        #             log.debug(msg) if log else print(msg)
+        #     dict_word[type_name] = phrases
 
     # ===== dr-g
     for dr_body in soup.find_all("dr-g"):
@@ -194,7 +137,7 @@ if __name__ == "__main__":
     from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
     from multiprocessing.pool import ThreadPool
 
-    query = "absent"  # "abdomen"
+    query = "abduct"  # "abdomen"
     mdx_url = "/Users/otto/Downloads/dict/oxfordstu.mdx"
     # print(result)
 
@@ -222,8 +165,6 @@ if __name__ == "__main__":
     # _, pron_dict, _, p2 = futures.get()
     ## ---- Single core: 388 ms
     oxfordstu_word = create_oxfordstu_word(soup, query)
-    _, pron_dict = get_cambridge_chinese(query)
-    tense, p2 = get_macmillan_tense(query)
     print(json.dumps(oxfordstu_word))
     # print(pron_dict)
     # print(p2)

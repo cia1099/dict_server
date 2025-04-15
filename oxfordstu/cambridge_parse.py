@@ -54,6 +54,8 @@ def create_cambridge_word(
             "phonetics": dict(zip(["uk", "us"], phonetics)),
             "audio": dict(zip(["uk", "us"], audio_files)),
         }
+    if "phrasal verb" in dict_word:
+        dict_word["verb"] = dict_word.pop("phrasal verb")
 
     return dict_word
 
@@ -88,7 +90,7 @@ def convert_subscript(subscript: str | None):
 
 if __name__ == "__main__":
     MDX_URL = "/Users/otto/Downloads/dict/cambridge4.mdx"
-    query = "off the record"
+    query = "drink down"
     word = create_cambridge_word(query, mdx_url=MDX_URL)
     # print(word)
     print(json.dumps(word))

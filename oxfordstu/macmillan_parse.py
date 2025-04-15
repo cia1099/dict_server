@@ -65,22 +65,26 @@ def create_macmillan_word(
             "tenses": tenses if len(tenses) > 0 else None,
             "audio": audio_file if len(audio_file) > 0 else None,
         }
+    if "phrasal verb" in dict_word:
+        dict_word["verb"] = dict_word.pop("phrasal verb")
     # ====phrases
-    phrases = [
-        p.get_text(strip=True)
-        for phrase in soup.find_all(
-            "div", re.compile(r"(phrases|phrasal-verbs)-container")
-        )
-        for p in phrase.find_all("a")
-        if p
-    ]
-    dict_word["phrases"] = phrases
+    if len(dict_word):
+        phrases = [
+            p.get_text(strip=True)
+            for phrase in soup.find_all(
+                "div", re.compile(r"(phrases|phrasal-verbs)-container")
+            )
+            for p in phrase.find_all("a")
+            if p
+        ]
+        dict_word["phrases"] = phrases
 
     return dict_word
 
 
 if __name__ == "__main__":
     MDX_URL = "/Users/otto/Downloads/dict/MacmillanEnEn.mdx"
-    query = "the drink"
+    query = "drink down"
     word = create_macmillan_word(query)
     print(json.dumps(word))
+    print(len(word))

@@ -38,17 +38,17 @@ def speech_thesaurus(
         h6 = syn_box.find("h6")
         if h6 and h6.get_text() in thesaurus_dict.keys():
             # 全形顿号
-            text = "、".join([h.get_text() for h in syn_box.find_all("a") if h])
-            # text = ", ".join([h.get_text() for h in syn_box.find_all("a") if h])
+            # text = "、".join([h.get_text() for h in syn_box.find_all("a") if h])
+            text = ", ".join([h.get_text() for h in syn_box.find_all("a") if h])
             thesaurus_dict.update({h6.get_text(): text if len(text) > 0 else None})
+
+    if "phrasal verb" in dict_word:
+        dict_word["verb"] = dict_word.pop("phrasal verb")
 
     if len(dict_word):
         popular = soup.find("span", class_="popularity-block hidden")
         text = popular.get_text() if popular else ""
         dict_word["frequency"] = freq_appear(text)
-
-    if "phrasal verb" in dict_word:
-        dict_word["verb"] = dict_word.pop("phrasal verb")
 
     return dict_word
 
@@ -66,7 +66,6 @@ def freq_appear(text: str) -> float | None:
 
 if __name__ == "__main__":
     MDX_URL = "/Users/otto/Downloads/dict/Merriam-Webster Dictionary Online.mdx"
-    query = "drink up"
+    query = "drink down"
     word = speech_thesaurus(query)
     print(json.dumps(word))
-    print(len(word))

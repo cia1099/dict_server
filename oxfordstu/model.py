@@ -43,27 +43,58 @@ class Def:
 
 
 @dataclass
+class Audio:
+    uk: str | None
+    us: str | None
+
+    @staticmethod
+    def from_dict(obj: Any) -> "Audio":
+        assert isinstance(obj, dict)
+        uk = from_str(obj.get("uk"))
+        us = from_str(obj.get("us"))
+        return Audio(uk, us)
+
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["uk"] = from_str(self.uk)
+        result["us"] = from_str(self.us)
+        return result
+
+
+@dataclass
 class PartWord:
+    # only can use to oxfordstu_dict or cambridge
     part_word_def: List[Def]
-    audio: List[str]
+    audio: Audio
 
     @staticmethod
     def from_dict(obj: Any) -> "PartWord":
         assert isinstance(obj, dict)
-        part_word_def = from_list(Def.from_dict, obj.get("def"))
-        audio = from_list(from_str, obj.get("audio"))
+        part_word_def = from_list(Def.from_dict, obj.get("def", []))
+        audio = Audio.from_dict(obj.get("audio", {}))
         return PartWord(part_word_def, audio)
 
     def to_dict(self) -> dict:
         result: dict = {}
         result["def"] = from_list(lambda x: to_class(Def, x), self.part_word_def)
-        result["audio"] = from_list(from_str, self.audio)
+        result["audio"] = self.audio.to_dict()
         return result
 
 
-def part_word_from_dict(s: Any) -> PartWord:
-    return PartWord.from_dict(s)
+@dataclass
+class Thesaurus:
+    synonyms: str | None = None
+    antonyms: str | None = None
 
+    @staticmethod
+    def from_dict(obj: Any) -> "Thesaurus":
+        assert isinstance(obj, dict)
+        synonyms = obj.get("Synonyms")
+        antonyms = obj.get("Antonyms")
+        return Thesaurus(synonyms, antonyms)
 
-def part_word_to_dict(x: PartWord) -> Any:
-    return to_class(PartWord, x)
+    def to_dict(self) -> dict:
+        result: dict = {}
+        result["Synonyms"] = self.synonyms
+        result["Antonyms"] = self.antonyms
+        return result
