@@ -36,9 +36,9 @@ def build_macmillan_phrase(
                 elif len(macmillan_dict) == len(cambridge_dict) == 1:
                     part_of_speech = next(iter(cambridge_dict))
                 else:
-                    part_of_speech = speech
+                    part_of_speech = "idiom"
             else:
-                part_of_speech = "idiom"
+                part_of_speech = speech
             try:
                 phrase_idx = insert_phrase(
                     cursor,

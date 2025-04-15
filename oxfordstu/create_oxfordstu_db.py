@@ -58,7 +58,6 @@ def build_oxfordstu_word(
         )
 
     word_idx = insert_word(cursor, word=word, freq=thesaurus_dict.get("frequency"))
-    build_macmillan_phrase(cursor, word_idx, macmillan_dict.get("phrases", []))
 
     for part_of_speech in word_dict:
         if not part_of_speech in speeches:
@@ -112,6 +111,8 @@ def build_oxfordstu_word(
     asset = get_asset_oxfordstu(soup)
     if asset is not None:
         insert_asset(cursor, word_idx=word_idx, filename=asset)
+
+    build_macmillan_phrase(cursor, word_idx, macmillan_dict.get("phrases", []))
 
     return word_idx, definition_idx, explanation_idx, example_idx
 
