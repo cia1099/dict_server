@@ -105,9 +105,7 @@ def build_oxfordstu_word(
                 subscript=explain.subscript,
             )
             for example in explain.examples:
-                example_idx = insert_example(
-                    cursor, word_idx, explanation_idx, example=example
-                )
+                insert_example(cursor, word_idx, explanation_idx, example=example)
 
     asset = get_asset_oxfordstu(soup)
     if asset is not None:
@@ -115,7 +113,7 @@ def build_oxfordstu_word(
 
     build_macmillan_phrase(cursor, word_idx, macmillan_dict.get("phrases", []))
 
-    return word_idx, definition_idx, explanation_idx, example_idx
+    return word_idx
 
 
 def modified_null_alphabet(cursor: sql.engine.Connection):
@@ -166,7 +164,10 @@ def modified_null_alphabet(cursor: sql.engine.Connection):
         )
         cursor.execute(update_query)
         zh_CN = cambridge_dict.get(part_of_speech, {}).get("cn_def")
-        insert_translation(cursor, entry[3], entry[2], zh_CN)
+        try:
+            insert_translation(cursor, entry[3], entry[2], zh_CN)
+        except Exception as e:
+            pass
 
         if len(word.split(" ")) == 1 and len(macmillan_dict) > 1:
             try:
@@ -245,12 +246,10 @@ if __name__ == "__main__":
                 log.info(f"'{word}' is not a vocabulary")
                 continue
             try:
-                word_idx, definition_idx, explanation_idx, example_idx = (
-                    build_oxfordstu_word(
-                        word,
-                        BeautifulSoup(html, "lxml"),
-                        cursor,
-                    )
+                word_idx = build_oxfordstu_word(
+                    word,
+                    BeautifulSoup(html, "lxml"),
+                    cursor,
                 )
             except Exception as e:
                 if isinstance(e, ValueError):
