@@ -169,37 +169,41 @@ def modified_null_alphabet(cursor: sql.engine.Connection):
         insert_translation(cursor, entry[3], entry[2], zh_CN)
 
         if len(word.split(" ")) == 1 and len(macmillan_dict) > 1:
-            word_idx = insert_word(
-                cursor, word=word, freq=thesaurus_dict.get("frequency")
-            )
-            definition_idx = insert_definition(
-                cursor,
-                word_idx,
-                part_of_speech=part_of_speech,
-                inflection=macmillan_dict.get(part_of_speech, {}).get("tenses"),
-                alphabet_uk=alphabet["uk"],
-                alphabet_us=alphabet["us"],
-                audio_uk=entry[-3],
-                audio_us=entry[-2],
-                synonyms=thesaurus.synonyms,
-                antonyms=thesaurus.antonyms,
-                zh_CN=zh_CN,
-            )
-            defs = [
-                Def.from_dict(d)
-                for d in macmillan_dict.get(part_of_speech, {}).get("def", [])
-            ]
-            for explain in defs:
-                explanation_idx = insert_explanation(
+            try:
+                word_idx = insert_word(
+                    cursor, word=word, freq=thesaurus_dict.get("frequency")
+                )
+                definition_idx = insert_definition(
                     cursor,
                     word_idx,
-                    definition_id=definition_idx,
-                    explain=explain.explanation,
-                    subscript=explain.subscript,
+                    part_of_speech=part_of_speech,
+                    inflection=macmillan_dict.get(part_of_speech, {}).get("tenses"),
+                    alphabet_uk=alphabet["uk"],
+                    alphabet_us=alphabet["us"],
+                    audio_uk=entry[-3],
+                    audio_us=entry[-2],
+                    synonyms=thesaurus.synonyms,
+                    antonyms=thesaurus.antonyms,
+                    zh_CN=zh_CN,
                 )
-                for example in explain.examples:
-                    insert_example(cursor, word_idx, explanation_idx, example=example)
-
+                defs = [
+                    Def.from_dict(d)
+                    for d in macmillan_dict.get(part_of_speech, {}).get("def", [])
+                ]
+                for explain in defs:
+                    explanation_idx = insert_explanation(
+                        cursor,
+                        word_idx,
+                        definition_id=definition_idx,
+                        explain=explain.explanation,
+                        subscript=explain.subscript,
+                    )
+                    for example in explain.examples:
+                        insert_example(
+                            cursor, word_idx, explanation_idx, example=example
+                        )
+            except Exception as e:
+                log.critical("%s" % e)
         if entry[-1] is None:
             examples = [
                 e

@@ -36,6 +36,10 @@ def create_cambridge_word(
         for def_block in entry.find_all("div", class_="def-block"):
             en_def = def_block.find("span", class_="en_def")
             explain = en_def.get_text(strip=True) if en_def else None
+            if explain is None:
+                msg = f"{word} can't find explain(null) conflicted schema constraint db in cambridge"
+                log.warning(msg) if log else print(msg)
+                continue
             gcs = def_block.find("span", class_="gcs")
             subscript = gcs.get_text(strip=True) if gcs else None
             examples = [

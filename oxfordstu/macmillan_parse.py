@@ -3,6 +3,7 @@ if __name__ == "__main__":
 
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from typing import Generator
 from mdict_utils import reader
 from bs4 import BeautifulSoup
 import re, json
@@ -41,6 +42,10 @@ def create_macmillan_word(
         for body in entry.find_all("div", class_="sense"):
             definition = body.find("span", class_="definition")
             explain = definition.get_text().lstrip() if definition else None
+            if explain is None:
+                msg = f"{word} can't find explain(null) conflicted schema constraint db in macmillan"
+                log.warning(msg) if log else print(msg)
+                continue
             examples = [e.get_text() for e in body.find_all("p", class_="example") if e]
             try:
                 subscript = (
@@ -69,15 +74,15 @@ def create_macmillan_word(
         dict_word["verb"] = dict_word.pop("phrasal verb")
     # ====phrases
     if len(dict_word):
-        phrases = [
+        phrases: Generator[str] = (
             p.get_text(strip=True)
             for phrase in soup.find_all(
                 "div", re.compile(r"(phrases|phrasal-verbs)-container")
             )
             for p in phrase.find_all("a")
             if p
-        ]
-        dict_word["phrases"] = phrases
+        )
+        dict_word["phrases"] = [p for p in phrases if len(p.split(" ")) > 1]
 
     return dict_word
 

@@ -10,7 +10,7 @@ def insert_word(cursor: sql.engine.Connection, word: str, freq: float | None) ->
         if word_idx is None:
             raise ValueError(f"Duplicate word({word}) in database")
     except:
-        raise ValueError(f"Cannot replicate word({word}, id={word_idx}) in database")
+        raise ValueError(f"Cannot replicate word({word}) in database")
     return word_idx
 
 
@@ -99,9 +99,13 @@ def insert_translation(
 
 def insert_phrase(cursor: sql.engine.Connection, word_idx: int, **kargs):
     stmt = sql.insert(Phrase).values(word_id=word_idx, **kargs).returning(Phrase.id)
-    phrase_idx = cursor.execute(stmt).scalar()
-    if phrase_idx is None:
-        raise ValueError(f"{kargs.get("phrase")} Failed insert to db")
+
+    try:
+        phrase_idx = cursor.execute(stmt).scalar()
+        if phrase_idx is None:
+            raise ValueError(f"{kargs.get("phrase")} Failed insert to db")
+    except:
+        raise ValueError(f"{kargs.get("phrase")}(word_id={word_idx}) duplicate in db")
     return phrase_idx
 
 

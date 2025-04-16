@@ -122,10 +122,10 @@ class Translation(Base):
 
 class Phrase(Base):
     __tablename__ = "phrases"
-    __table_args__ = (UniqueConstraint("id", "word_id", name="phrase_unique"),)
+    __table_args__ = (UniqueConstraint("phrase", "word_id", name="phrase_unique"),)
     id = Column(Integer, primary_key=True)
     word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
-    phrase = Column(String, nullable=False)
+    phrase = Column(String, nullable=False, unique=True)
     part_of_speech = Column(String, nullable=False)
     frequency = Column(Float, default=None)
 
