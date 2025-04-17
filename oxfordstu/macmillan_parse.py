@@ -79,7 +79,7 @@ def create_macmillan_word(
             for phrase in soup.find_all(
                 "div", re.compile(r"(phrases|phrasal-verbs)-container")
             )
-            for p in phrase.find_all("a")
+            for p in phrase.find_all("li", class_=re.compile(r"(phr|pv)-xref"))
             if p
         )
         dict_word["phrases"] = [p for p in phrases if len(p.split(" ")) > 1]
@@ -89,7 +89,7 @@ def create_macmillan_word(
 
 if __name__ == "__main__":
     MDX_URL = "/Users/otto/Downloads/dict/MacmillanEnEn.mdx"
-    query = "drink down"
+    query = "abandon"
     word = create_macmillan_word(query)
     print(json.dumps(word))
     print(len(word))
