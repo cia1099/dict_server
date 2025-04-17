@@ -49,9 +49,9 @@ async def retrieved_word(word: str, req: Request, _=Depends(guest_auth)):
 
     res = await cursor.execute(stmt)
     cache = []
-    for entry in res.fetchall():
-        w = trace_word(retrieval_queue(entry), cache)
-        if not any((d for d in cache if d["word_id"] == entry[0])):
+    for map in res.mappings().fetchall():
+        w = trace_word(retrieval_queue(map), cache)
+        if not any((d for d in cache if d["word_id"] == map.get("word_id"))):
             cache += [w]
     cache = [convert_asset_url(w, req) for w in cache]
     content = json.dumps(cache) if len(cache) else f"{word} not found"
@@ -67,7 +67,7 @@ async def search_word(
         return {"status": 200, "content": "[]"}
     contains_unicode = any(ord(char) > 127 for char in query)
     condition = (
-        Definition.chinese.regexp_match(rf"\b{query}")
+        Translation.zh_CN.regexp_match(rf"\b{query}")
         if contains_unicode
         else (
             Definition.inflection.regexp_match(rf"\b{query}")
@@ -79,6 +79,7 @@ async def search_word(
         sql.select(Word.id)
         .join(Definition, Word.id == Definition.word_id)
         .join(Explanation, Explanation.definition_id == Definition.id)
+        .outerjoin(Translation, Word.id == Translation.word_id)
         .where(condition)
         .group_by(Word.id)
         .order_by(sql.func.char_length(Word.word).asc())
@@ -123,16 +124,10 @@ async def get_word_max_id():
 async def retrieved_word_id(word_ids: Iterable[int]) -> list[dict[str, Any]]:
     stmt = (
         sql.select(
-            Word.id,
             Word.word,
-            Asset.filename,
-            Definition.part_of_speech,
-            Definition.inflection,
-            Definition.alphabet_uk,
-            Definition.alphabet_us,
-            Definition.audio_uk,
-            Definition.audio_us,
-            Definition.chinese,
+            Word.frequency,
+            Asset.filename.label("asset"),
+            Definition,
             Explanation.subscript,
             Explanation.explain,
             Example.example,
@@ -147,34 +142,9 @@ async def retrieved_word_id(word_ids: Iterable[int]) -> list[dict[str, Any]]:
 
     res = await cursor.execute(stmt)
     cache = list[dict[str, Any]]()
-    for entry in res.fetchall():
-        w = trace_word(
-            [
-                {"word_id": entry[0], "word": entry[1], "asset": entry[2]},
-                entry[3],
-                {
-                    "part_of_speech": entry[3],
-                    "inflection": entry[4],
-                    "phonetic_uk": entry[5],
-                    "phonetic_us": entry[6],
-                    "audio_uk": entry[7],
-                    "audio_us": entry[8],
-                    "translate": entry[-4],
-                },
-                {
-                    "part_of_speech": entry[3],
-                    "explain": entry[-2],
-                    "subscript": entry[-3],
-                },
-                {
-                    "part_of_speech": entry[3],
-                    "explain": entry[-2],
-                    "example": entry[-1],
-                },
-            ],
-            cache,
-        )
-        if not any((d for d in cache if d["word_id"] == entry[0])):
+    for map in res.mappings().fetchall():
+        w = trace_word(retrieval_queue(map), cache)
+        if not any((d for d in cache if d["word_id"] == map.get("word_id"))):
             cache += [w]
 
     return cache

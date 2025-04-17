@@ -90,16 +90,10 @@ def get_indexes(cursor: sql.engine.Connection):
 def retrieved_word_id(cursor: sql.engine.Connection, word_id: int):
     stmt = (
         sql.select(
-            Word.id,
             Word.word,
-            Asset.filename,
-            Definition.part_of_speech,
-            Definition.inflection,
-            Definition.alphabet_uk,
-            Definition.alphabet_us,
-            Definition.audio_uk,
-            Definition.audio_us,
-            Definition.chinese,
+            Word.frequency,
+            Asset.filename.label("asset"),
+            Definition,
             Explanation.subscript,
             Explanation.explain,
             Example.example,
@@ -113,34 +107,9 @@ def retrieved_word_id(cursor: sql.engine.Connection, word_id: int):
 
     res = cursor.execute(stmt)
     cache = []
-    for entry in res.fetchall():
-        w = trace_word(
-            [
-                {"word_id": entry[0], "word": entry[1], "asset": entry[2]},
-                entry[3],
-                {
-                    "part_of_speech": entry[3],
-                    "inflection": entry[4],
-                    "phonetic_uk": entry[5],
-                    "phonetic_us": entry[6],
-                    "audio_uk": entry[7],
-                    "audio_us": entry[8],
-                    "translate": entry[-4],
-                },
-                {
-                    "part_of_speech": entry[3],
-                    "explain": entry[-2],
-                    "subscript": entry[-3],
-                },
-                {
-                    "part_of_speech": entry[3],
-                    "explain": entry[-2],
-                    "example": entry[-1],
-                },
-            ],
-            cache,
-        )
-        if not any((d for d in cache if d["word_id"] == entry[0])):
+    for map in res.mappings().fetchall():
+        w = trace_word(retrieval_queue(map), cache)
+        if not any((d for d in cache if d["word_id"] == map.get("word_id"))):
             cache += [w]
 
     return (
@@ -169,11 +138,12 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
     res = cursor.execute(stmt)
     cache = []
     # print(f"\x1b[43mresult has {len(res.fetchall())}\x1b[0m")
-    for row in res.fetchall():
-        w = trace_word(retrieval_queue(row), cache)
+    for map in res.mappings().fetchall():
+        w = trace_word(retrieval_queue(map), cache)
         # print(json.dumps(w))
-        if not any((d for d in cache if d["word_id"] == row[0])):
+        if not any((d for d in cache if d["word_id"] == map.get("word_id"))):
             cache += [w]
+    # cache = [dict(row._mapping) for row in res.fetchall()]
 
     # print(json.dumps(cache))
     return cache
@@ -183,7 +153,7 @@ def retrieved_word(cursor: sql.engine.Connection, word: str) -> list[dict]:
 def search_word(cursor: sql.engine.Connection, word: str, page: int = 0):
     contains_unicode = any(ord(char) > 127 for char in word)
     condition = (
-        Definition.chinese.regexp_match(rf"\b{word}")
+        Translation.zh_CN.regexp_match(rf"\b{word}")
         if contains_unicode
         else (
             Definition.inflection.regexp_match(rf"\b{word}")
@@ -192,7 +162,7 @@ def search_word(cursor: sql.engine.Connection, word: str, page: int = 0):
         )
     )
     select = (
-        (Word.id, Word.word, Definition.chinese)
+        (Word.id, Word.word, Translation.zh_CN)
         if contains_unicode
         else (Word.id, Word.word, Definition.part_of_speech)
     )
@@ -278,59 +248,62 @@ def trace_search_result(nodes: list, cache: list[dict]) -> dict:
 def retrieval_expression(subq: sql.Select) -> sql.Select:
     return (
         sql.select(
-            Word.id,
             Word.word,
-            Definition.part_of_speech,
-            Definition.inflection,
-            Definition.alphabet_uk,
-            Definition.alphabet_us,
-            Definition.audio_uk,
-            Definition.audio_us,
-            Definition.chinese,
+            Word.frequency,
+            Definition,
             Explanation.subscript,
             Explanation.explain,
             Example.example,
         )
-        .join(Definition, Word.id == Definition.word_id)
+        .join(Word, Word.id == Definition.word_id)
         .join(Explanation, Explanation.definition_id == Definition.id)
         .outerjoin(Example, Example.explanation_id == Explanation.id)
         .where(Word.id.in_(subq))
     )
 
 
-def retrieval_queue(row: sql.Row) -> list:
+def retrieval_queue(map: sql.RowMapping) -> list:
+    head = {
+        "word_id": map["word_id"],
+        "word": map["word"],
+        "frequency": map.get("frequency"),
+    }
+    if map.get("asset"):
+        head["asset"] = map["asset"]
     return [
-        {"word_id": row[0], "word": row[1]},
-        row[2],
+        head,
+        map["part_of_speech"],
         {
-            "part_of_speech": row[2],
-            "inflection": row[3],
-            "phonetic_uk": row[4],
-            "phonetic_us": row[5],
-            "audio_uk": row[6],
-            "audio_us": row[7],
-            "translate": row[-4],
+            "part_of_speech": map["part_of_speech"],
+            "inflection": map.get("inflection"),
+            "phonetic_uk": map.get("alphabet_uk"),
+            "phonetic_us": map.get("alphabet_us"),
+            "audio_uk": map.get("audio_uk"),
+            "audio_us": map.get("audio_us"),
+            "synonyms": map.get("synonyms"),
+            "antonyms": map.get("antonyms"),
+            "definition_id": map.get("id"),
         },
         {
-            "part_of_speech": row[2],
-            "explain": row[-2],
-            "subscript": row[-3],
+            "part_of_speech": map["part_of_speech"],
+            "explain": map["explain"],
+            "subscript": map.get("subscript"),
         },
         {
-            "part_of_speech": row[2],
-            "explain": row[-2],
-            "example": row[-1],
+            "part_of_speech": map["part_of_speech"],
+            "explain": map["explain"],
+            "example": map.get("example"),
         },
     ]
 
 
 if __name__ == "__main__":
-    # cache = retrieved_word("drunk")
-    # cache = retrieved_word_id(830)
+    # cache = retrieved_word("apple")
+    # cache = retrieved_word_id(810)
     # print(json.dumps(cache))
     # test_dictionary("drunk")
     # find_null_alphabets()
     # print(get_indexes())
-    search_word("app", 1)
-    # print(json.dumps(search_word("app"), indent=2))
+    search_word("app", 0)
+    print(json.dumps(search_word("app"), indent=2))
     # print([ord(char) for char in text])
