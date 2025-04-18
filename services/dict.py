@@ -265,25 +265,13 @@ def retrieval_expression(subq: sql.Select) -> sql.Select:
 def retrieval_queue(map: sql.RowMapping) -> list:
     head = {
         "word_id": map["word_id"],
-        "word": map["word"],
         "frequency": map.get("frequency"),
     }
-    if map.get("asset"):
-        head["asset"] = map["asset"]
+    head.update({k: map[k] for k in ("word", "asset", "phrase") if k in map})
     return [
         head,
         map["part_of_speech"],
-        {
-            "part_of_speech": map["part_of_speech"],
-            "inflection": map.get("inflection"),
-            "phonetic_uk": map.get("alphabet_uk"),
-            "phonetic_us": map.get("alphabet_us"),
-            "audio_uk": map.get("audio_uk"),
-            "audio_us": map.get("audio_us"),
-            "synonyms": map.get("synonyms"),
-            "antonyms": map.get("antonyms"),
-            "definition_id": map.get("id"),
-        },
+        queue_body(map),
         {
             "part_of_speech": map["part_of_speech"],
             "explain": map["explain"],
@@ -297,13 +285,37 @@ def retrieval_queue(map: sql.RowMapping) -> list:
     ]
 
 
+def queue_body(map: sql.RowMapping) -> dict:
+    body = {"part_of_speech": map["part_of_speech"]}
+    def_columns = {
+        "inflection",
+        "alphabet_uk",
+        "alphabet_us",
+        "audio_uk",
+        "audio_us",
+        "synonyms",
+        "antonyms",
+        "id",
+    }
+    body.update({k: map[k] for k in def_columns if k in map})
+    for k, v in {
+        "alphabet_uk": "phonetic_uk",
+        "alphabet_us": "phonetic_us",
+        "id": "definition_id",
+    }.items():
+        if k in body:
+            body.update({v: body.pop(k)})
+
+    return body
+
+
 if __name__ == "__main__":
-    # cache = retrieved_word("apple")
+    cache = retrieved_word("drink")
     # cache = retrieved_word_id(810)
-    # print(json.dumps(cache))
+    print(json.dumps(cache))
     # test_dictionary("drunk")
     # find_null_alphabets()
     # print(get_indexes())
-    search_word("app", 0)
-    print(json.dumps(search_word("app"), indent=2))
+    # search_word("app", 0)
+    # print(json.dumps(search_word("app"), indent=2))
     # print([ord(char) for char in text])

@@ -114,6 +114,12 @@ async def get_word_by_id(word_id: int, req: Request, _=Depends(guest_auth)):
     return {"status": 200 if len(words) else 404, "content": content}
 
 
+@router.get("/phrases")
+async def get_phrases_from_word_id(word_id: int, _=Depends(guest_auth)):
+    phrases = await retrieved_phrases(word_id)
+    return {"status": 200, "content": json.dumps(phrases)}
+
+
 @router.get("/words/max_id")
 async def get_word_max_id():
     stmt = sql.select(sql.func.count(Word.id))
@@ -150,12 +156,39 @@ async def retrieved_word_id(word_ids: Iterable[int]) -> list[dict[str, Any]]:
     return cache
 
 
+async def retrieved_phrases(word_id: int):
+    stmt = (
+        sql.select(
+            Phrase.id.label("word_id"),
+            Phrase.phrase,
+            Phrase.part_of_speech,
+            Explanation.subscript,
+            Explanation.explain,
+            Example.example,
+        )
+        .join(Explanation, Explanation.phrase_id == Phrase.id)
+        .outerjoin(Example, Example.explanation_id == Explanation.id)
+        .where(Phrase.word_id == word_id)
+    )
+    res = await cursor.execute(stmt)
+    cache = list[dict[str, Any]]()
+    for map in res.mappings().fetchall():
+        w = trace_word(retrieval_queue(map), cache)
+        if not any((d for d in cache if d["word_id"] == map.get("word_id"))):
+            cache += [w]
+    # update word_id to phrase_id
+    for c in cache:
+        c["phrase_id"] = c.pop("word_id")
+    return cache
+
+
 async def a_run():
     async with cursor:
         # cache = await retrieved_word_id([830, 30])
+        cache = await retrieved_phrases(810)
         # print(len(cache))
-        res = await get_words(Request(), id=[830, 30])
-    # print(json.dumps(cache))
+        # res = await get_words(Request(), id=[830, 30])
+    print(json.dumps(cache))
 
 
 if __name__ == "__main__":
