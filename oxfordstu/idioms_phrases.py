@@ -12,6 +12,7 @@ from macmillan_parse import create_macmillan_word
 from cambridge_parse import create_cambridge_word
 from thesaurus import speech_thesaurus, valid_speeches
 from insert_db import insert_phrase, insert_explanation, insert_example
+from oxfordstu_schema import Phrase
 from model import Def
 from log_config import log
 
@@ -53,6 +54,13 @@ def build_macmillan_phrase(
             for explain in [
                 Def.from_dict(d) for d in macmillan_dict[speech].get("def", [])
             ]:
+                if explain.explanation.startswith("to ") and part_of_speech != "verb":
+                    part_of_speech = "verb"
+                    cursor.execute(
+                        sql.update(Phrase)
+                        .where(Phrase.id == phrase_idx)
+                        .values(part_of_speech="verb")
+                    )
                 explanation_idx = insert_explanation(
                     cursor,
                     word_id,
@@ -67,5 +75,5 @@ def build_macmillan_phrase(
 
 if __name__ == "__main__":
     # build_macmillan_phrase(("shit", "fuck", "hello word"))
-    a, b = 1, 1
-    print(a == b == 1)
+    explain = "the leave a ship or boat because it is dangerous to stay"
+    print(explain.startswith("to "))

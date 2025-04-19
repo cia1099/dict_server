@@ -89,7 +89,7 @@ def create_macmillan_word(
 
 if __name__ == "__main__":
     MDX_URL = "/Users/otto/Downloads/dict/MacmillanEnEn.mdx"
-    query = "abandon"
+    query = "abandon ship"
     word = create_macmillan_word(query)
     print(json.dumps(word))
     print(len(word))

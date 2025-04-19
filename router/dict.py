@@ -162,11 +162,20 @@ async def retrieved_phrases(word_id: int):
             Phrase.id.label("word_id"),
             Phrase.phrase,
             Phrase.part_of_speech,
+            Definition.inflection,
             Explanation.subscript,
             Explanation.explain,
             Example.example,
         )
         .join(Explanation, Explanation.phrase_id == Phrase.id)
+        .outerjoin(
+            Definition,
+            (Definition.word_id == Phrase.word_id)
+            & (
+                (Definition.part_of_speech == Phrase.part_of_speech)
+                | (Definition.part_of_speech.in_(["verb", "noun"]))
+            ),
+        )
         .outerjoin(Example, Example.explanation_id == Explanation.id)
         .where(Phrase.word_id == word_id)
     )
@@ -185,7 +194,7 @@ async def retrieved_phrases(word_id: int):
 async def a_run():
     async with cursor:
         # cache = await retrieved_word_id([830, 30])
-        cache = await retrieved_phrases(810)
+        cache = await retrieved_phrases(4)  # drink=4753
         # print(len(cache))
         # res = await get_words(Request(), id=[830, 30])
     print(json.dumps(cache))
