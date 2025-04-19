@@ -63,7 +63,7 @@ def find_null_alphabets(cursor: sql.engine.Connection):
         )
         # .outerjoin(Definition, Definition.word_id == Word.id)
         .join(Explanation, Explanation.definition_id == Definition.id).where(
-            (Definition.alphabet_uk == None) | (Definition.alphabet_us == None)
+            (Definition.phonetic_uk == None) | (Definition.phonetic_us == None)
         )
     )
     res = cursor.execute(stmt)
@@ -289,20 +289,17 @@ def queue_body(map: sql.RowMapping) -> dict:
     body = {"part_of_speech": map["part_of_speech"]}
     def_columns = {
         "inflection",
-        "alphabet_uk",
-        "alphabet_us",
+        "phonetic_uk",
+        "phonetic_us",
         "audio_uk",
         "audio_us",
+        "translate",
         "synonyms",
         "antonyms",
         "id",
     }
     body.update({k: map[k] for k in def_columns if k in map})
-    for k, v in {
-        "alphabet_uk": "phonetic_uk",
-        "alphabet_us": "phonetic_us",
-        "id": "definition_id",
-    }.items():
+    for k, v in {"id": "definition_id"}.items():
         if k in body:
             body.update({v: body.pop(k)})
 

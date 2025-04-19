@@ -145,6 +145,9 @@ async def retrieved_word_id(word_ids: Iterable[int]) -> list[dict[str, Any]]:
         .where(Word.id.in_(word_ids))
         .order_by(sql.func.char_length(Word.word).asc())
     )
+    stmt = stmt.add_columns(Translation.zh_CN.label("translate")).outerjoin(
+        Translation, Translation.definition_id == Definition.id
+    )
 
     res = await cursor.execute(stmt)
     cache = list[dict[str, Any]]()
@@ -173,7 +176,7 @@ async def retrieved_phrases(word_id: int):
             (Definition.word_id == Phrase.word_id)
             & (
                 (Definition.part_of_speech == Phrase.part_of_speech)
-                | (Definition.part_of_speech.in_(["verb", "noun"]))
+                | (Definition.part_of_speech == "noun")
             ),
         )
         .outerjoin(Example, Example.explanation_id == Explanation.id)
@@ -193,8 +196,8 @@ async def retrieved_phrases(word_id: int):
 
 async def a_run():
     async with cursor:
-        # cache = await retrieved_word_id([830, 30])
-        cache = await retrieved_phrases(4)  # drink=4753
+        cache = await retrieved_word_id([810])
+        # cache = await retrieved_phrases(4753)  # drink=4753
         # print(len(cache))
         # res = await get_words(Request(), id=[830, 30])
     print(json.dumps(cache))

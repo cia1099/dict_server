@@ -82,7 +82,7 @@ def create_macmillan_word(
             for p in phrase.find_all("li", class_=re.compile(r"(phr|pv)-xref"))
             if p
         )
-        dict_word["phrases"] = [p for p in phrases]
+        dict_word["phrases"] = [p for p in phrases if len(p.split(" ")) > 1]
 
     return dict_word
 

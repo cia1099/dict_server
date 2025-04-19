@@ -54,8 +54,8 @@ class Definition(Base):
     # part_of_speech = Column(Enum(PartOfSpeech))
     part_of_speech = Column(String)
     inflection = Column(String)
-    alphabet_us = Column(String)
-    alphabet_uk = Column(String)
+    phonetic_us = Column(String)
+    phonetic_uk = Column(String)
     audio_us = Column(String)
     audio_uk = Column(String)
     synonyms = Column(String)
@@ -197,59 +197,3 @@ if __name__ == "__main__":
     # test_inflection_search(engine)
     uid = uuid.uuid4()
     # uid = "-".join(["0" * 8, "0" * 4, "0" * 4, "0" * 4, "0" * 12])
-    print("uid = %s\nlen = %d" % (uid, len(str(uid))))
-    """ expression inserts
-    print(sql.insert(Word).values(word="", id=0))
-    print("=" * 10 + "definition" + "=" * 10)
-    print(
-        sql.insert(Definition)
-        .values(
-            word_id=0,
-            **{
-                "part_of_speech": "",
-                "inflection": "",
-                "alphabet_uk": "",
-                "alphabet_us": "",
-                "audio_uk": "",
-                "audio_us": "",
-                "chinese": "",
-            }
-        )
-        .returning(Definition.id)
-    )
-    print("=" * 10 + "explanation" + "=" * 10)
-    print(
-        sql.insert(Explanation)
-        .values(word_id=0, definition_id=0, **{"explain": "", "subscript": ""})
-        .returning(Explanation.id)
-    )
-    print("=" * 10 + "example" + "=" * 10)
-    print(
-        sql.insert(Example).values(word_id=0, explanation_id=0, example="")
-        # .returning(Example.id)
-    )
-"""
-""" expression fetch word_id
-print(
-    sql.select(
-        Word.id,
-        Word.word,
-        Asset.filename,
-        Definition.part_of_speech,
-        Definition.inflection,
-        Definition.alphabet_uk,
-        Definition.alphabet_us,
-        Definition.audio_uk,
-        Definition.audio_us,
-        Definition.chinese,
-        Explanation.subscript,
-        Explanation.explain,
-        Example.example,
-    )
-    .outerjoin(Asset, Asset.word_id == Word.id)
-    .join(Definition, Word.id == Definition.word_id)
-    .join(Explanation, Explanation.definition_id == Definition.id)
-    .outerjoin(Example, Example.explanation_id == Explanation.id)
-    .where(Word.id.in_([]))
-)
-"""

@@ -79,8 +79,8 @@ def build_oxfordstu_word(
             word_idx,
             part_of_speech=part_of_speech,
             inflection=inflection,
-            alphabet_uk=alphabet["uk"],
-            alphabet_us=alphabet["us"],
+            phonetic_uk=alphabet["uk"],
+            phonetic_us=alphabet["us"],
             audio_uk=part_word.audio.uk,
             audio_us=part_word.audio.us,
             synonyms=thesaurus.synonyms,
@@ -130,7 +130,7 @@ def modified_null_alphabet(cursor: sql.engine.Connection):
         )
         .join(Explanation, Explanation.definition_id == Definition.id)
         .outerjoin(Example, Explanation.id == Example.explanation_id)
-        .where((Definition.alphabet_uk == None) & (Definition.alphabet_us == None))
+        .where((Definition.phonetic_uk == None) & (Definition.phonetic_us == None))
         .group_by(Definition.id)
     )
     res = cursor.execute(stmt)
@@ -153,8 +153,8 @@ def modified_null_alphabet(cursor: sql.engine.Connection):
         }
         thesaurus = Thesaurus.from_dict(thesaurus_dict.get(part_of_speech, {}))
         content = {
-            "alphabet_uk": alphabet["uk"],
-            "alphabet_us": alphabet["us"],
+            "phonetic_uk": alphabet["uk"],
+            "phonetic_us": alphabet["us"],
             "inflection": macmillan_dict.get(part_of_speech, {}).get("tenses"),
             "synonyms": thesaurus.synonyms,
             "antonyms": thesaurus.antonyms,
@@ -179,8 +179,8 @@ def modified_null_alphabet(cursor: sql.engine.Connection):
                     word_idx,
                     part_of_speech=part_of_speech,
                     inflection=macmillan_dict.get(part_of_speech, {}).get("tenses"),
-                    alphabet_uk=alphabet["uk"],
-                    alphabet_us=alphabet["us"],
+                    phonetic_uk=alphabet["uk"],
+                    phonetic_us=alphabet["us"],
                     audio_uk=entry[-3],
                     audio_us=entry[-2],
                     synonyms=thesaurus.synonyms,
