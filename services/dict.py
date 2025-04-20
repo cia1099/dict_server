@@ -10,6 +10,7 @@ if __name__ == "__main__":
 import sqlalchemy as sql
 from typing import Any
 from oxfordstu.oxfordstu_schema import *
+from oxfordstu.thesaurus import valid_speeches
 
 DB_URL = "sqlite:///dictionary/oxfordstu.db"
 
@@ -306,7 +307,23 @@ def queue_body(map: sql.RowMapping) -> dict:
     return body
 
 
+@bind_engine(DB_URL)
+def update_phrase(cursor: sql.engine.Connection):
+    # subq = sql.select(Phrase.id).where(Phrase.part_of_speech == "plural noun")
+    # stmt = sql.update(Phrase).where(Phrase.id.in_(subq)).values(part_of_speech="noun")
+    # res = cursor.execute(stmt)
+    # cursor.commit()
+    stmt = sql.select(Phrase.id, Phrase.part_of_speech).where(
+        sql.not_(Phrase.part_of_speech.in_(valid_speeches + ["idiom"]))
+    )
+    res = cursor.execute(stmt)
+    ids = [id for id in res.fetchall()]
+    print("There are invalid phrases %d" % len(ids))
+    print(ids)
+
+
 if __name__ == "__main__":
+    # update_phrase()
     cache = retrieved_word("drink")
     # cache = retrieved_word_id(810)
     print(json.dumps(cache))

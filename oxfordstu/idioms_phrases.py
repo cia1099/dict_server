@@ -33,7 +33,8 @@ def build_macmillan_phrase(
         for speech in macmillan_dict:
             if not speech in valid_speeches:
                 if len(macmillan_dict) == len(thesaurus) == 1:
-                    part_of_speech = next(iter(thesaurus))
+                    x_speech = next(iter(thesaurus))
+                    part_of_speech = "noun" if "noun" in x_speech else x_speech
                 elif len(macmillan_dict) == len(cambridge_dict) == 1:
                     part_of_speech = next(iter(cambridge_dict))
                 else:
