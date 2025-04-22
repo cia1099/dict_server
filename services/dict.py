@@ -246,8 +246,10 @@ def trace_search_result(nodes: list, cache: list[dict]) -> dict:
     return obj
 
 
-def retrieval_expression(subq: sql.Select) -> sql.Select:
-    return (
+def retrieval_expression(
+    subq: sql.Select, locate: sql.Column[str] | None = None
+) -> sql.Select:
+    stmt = (
         sql.select(
             Word.word,
             Word.frequency,
@@ -261,6 +263,11 @@ def retrieval_expression(subq: sql.Select) -> sql.Select:
         .outerjoin(Example, Example.explanation_id == Explanation.id)
         .where(Word.id.in_(subq))
     )
+    if not locate is None:
+        stmt = stmt.add_columns(locate.label("translate")).outerjoin(
+            Translation, Translation.definition_id == Definition.id
+        )
+    return stmt
 
 
 def retrieval_queue(map: sql.RowMapping) -> list:
@@ -324,7 +331,7 @@ def update_phrase(cursor: sql.engine.Connection):
 
 if __name__ == "__main__":
     # update_phrase()
-    cache = retrieved_word("drink")
+    cache = retrieved_word("recommendation")
     # cache = retrieved_word_id(810)
     print(json.dumps(cache))
     # test_dictionary("drunk")

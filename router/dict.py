@@ -10,12 +10,13 @@ if __name__ == "__main__":
 
 import json
 from typing import Iterable, List, Any
-from models.role import Role
+from models.role import Character, Role
+from models.translate import TranslateIn
 from router.img import convert_asset_url
 from services.auth import guest_auth
 from services.dict import trace_word, retrieval_expression, retrieval_queue
 from oxfordstu.oxfordstu_schema import *
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, status
 import sqlalchemy as sql
 from database import cursor
 
@@ -33,7 +34,12 @@ router = APIRouter()
 
 
 @router.get("/retrieval")
-async def retrieved_word(word: str, req: Request, _=Depends(guest_auth)):
+async def retrieved_word(
+    word: str,
+    req: Request,
+    lang: str | None = None,
+    char: Character = Depends(guest_auth),
+):
     subq = (
         sql.select(Word.id)
         .join(Definition, Word.id == Definition.word_id)
@@ -45,7 +51,9 @@ async def retrieved_word(word: str, req: Request, _=Depends(guest_auth)):
         )
         .group_by(Word.id)
     )
-    stmt = retrieval_expression(subq)
+    stmt = retrieval_expression(
+        subq, TranslateIn.column(lang) if char.role == Role.PREMIUM else None
+    )
 
     res = await cursor.execute(stmt)
     cache = []
@@ -120,6 +128,21 @@ async def get_phrases_from_word_id(word_id: int, _=Depends(guest_auth)):
     return {"status": 200, "content": json.dumps(phrases)}
 
 
+@router.get("/definition/translation")
+async def translate_definition(body: TranslateIn):
+    if not body.definition_id or not body.lang:
+        return {
+            "status": status.HTTP_400_BAD_REQUEST,
+            "content": "null value in definition_id or lang",
+        }
+    stmt = sql.select(body.locate()).where(
+        Translation.definition_id == body.definition_id
+    )
+    res = await cursor.execute(stmt)
+    tr = res.scalar_one_or_none()
+    return {"status": 200, "content": tr}
+
+
 @router.get("/words/max_id")
 async def get_word_max_id():
     stmt = sql.select(sql.func.count(Word.id))
@@ -144,9 +167,6 @@ async def retrieved_word_id(word_ids: Iterable[int]) -> list[dict[str, Any]]:
         .outerjoin(Example, Example.explanation_id == Explanation.id)
         .where(Word.id.in_(word_ids))
         .order_by(sql.func.char_length(Word.word).asc())
-    )
-    stmt = stmt.add_columns(Translation.zh_CN.label("translate")).outerjoin(
-        Translation, Translation.definition_id == Definition.id
     )
 
     res = await cursor.execute(stmt)

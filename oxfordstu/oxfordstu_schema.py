@@ -106,10 +106,10 @@ class Translation(Base):
     __tablename__ = "translations"
     __table_args__ = (
         UniqueConstraint("word_id", "definition_id", name="definition_unique"),
+        Index("UX_definition", "definition_id"),
     )
 
-    id = Column(Integer, primary_key=True)
-    definition_id = Column(Integer, ForeignKey("definitions.id"), nullable=False)
+    definition_id = Column(Integer, ForeignKey("definitions.id"), primary_key=True)
     word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
     zh_CN = Column(String)
     zh_TW = Column(String)
