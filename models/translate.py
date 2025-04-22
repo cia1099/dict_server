@@ -14,19 +14,19 @@ class TranslateIn(BaseModel):
     @staticmethod
     def column(lang: str | None):
         match lang:
-            case "zh_CN":
+            case "zh-CN":
                 return Translation.zh_CN
-            case "zh_TW":
+            case "zh-TW":
                 return Translation.zh_TW
-            case "ja_JP":
+            case "ja-JP":
                 return Translation.ja_JP
-            case "ko_KR":
+            case "ko-KR":
                 return Translation.ko_KR
-            case "vi_VN":
+            case "vi-VN":
                 return Translation.vi_VN
-            case "ar_SA":
+            case "ar-SA":
                 return Translation.ar_SA
-            case "th_TH":
+            case "th-TH":
                 return Translation.th_TH
             case _:
                 return Translation.zh_CN

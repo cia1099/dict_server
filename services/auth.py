@@ -118,3 +118,4 @@ class ApiAuth:
 
 guest_auth = ApiAuth(Role.GUEST)
 civvy_auth = ApiAuth(Role.CIVVY)
+premium_auth = ApiAuth(Role.PREMIUM)
