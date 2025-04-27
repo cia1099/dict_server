@@ -13,7 +13,7 @@ from typing import Iterable, List, Any
 from models.role import Character, Role
 from models.translate import TranslateIn
 from router.img import convert_asset_url
-from services.auth import guest_auth, premium_auth
+from services.auth import guest_auth
 from services.dict import trace_word, retrieval_expression, retrieval_queue
 from oxfordstu.oxfordstu_schema import *
 from fastapi import APIRouter, Depends, Query, Request, status, HTTPException
@@ -128,20 +128,6 @@ async def get_phrases_from_word_id(word_id: int, _=Depends(guest_auth)):
     return {"status": 200, "content": json.dumps(phrases)}
 
 
-@router.post("/definition/translation")
-async def definition_translation(body: TranslateIn, _=Depends(premium_auth)):
-    if not body.definition_id or not body.lang:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "null value in definition_id or lang"
-        )
-    stmt = sql.select(body.locate()).where(
-        Translation.definition_id == body.definition_id
-    )
-    res = await cursor.execute(stmt)
-    tr = res.scalar_one_or_none() or ""
-    return {"status": 200, "content": tr}
-
-
 @router.get("/words/max_id")
 async def get_word_max_id():
     stmt = sql.select(sql.func.count(Word.id))
@@ -179,17 +165,8 @@ async def retrieved_word_id(word_ids: Iterable[int]) -> list[dict[str, Any]]:
 
 
 async def retrieved_phrases(word_id: int):
-    stmt = (
-        sql.select(
-            Phrase.id.label("word_id"),
-            Phrase.phrase,
-            Phrase.part_of_speech,
-            Definition.inflection,
-            Explanation.subscript,
-            Explanation.explain,
-            Example.example,
-        )
-        .join(Explanation, Explanation.phrase_id == Phrase.id)
+    inf_cte = (
+        sql.select(Phrase.id.label("phrase_id"), Definition.inflection)
         .outerjoin(
             Definition,
             (Definition.word_id == Phrase.word_id)
@@ -198,6 +175,21 @@ async def retrieved_phrases(word_id: int):
                 | (Definition.part_of_speech == "noun")
             ),
         )
+        .where(Phrase.word_id == word_id)
+        .group_by(Phrase.id)
+    ).cte()
+    stmt = (
+        sql.select(
+            Phrase.id.label("word_id"),
+            Phrase.phrase,
+            Phrase.part_of_speech,
+            inf_cte.c.inflection,
+            Explanation.subscript,
+            Explanation.explain,
+            Example.example,
+        )
+        .join(Explanation, Explanation.phrase_id == Phrase.id)
+        .outerjoin(inf_cte, inf_cte.c.phrase_id == Phrase.id)
         .outerjoin(Example, Example.explanation_id == Explanation.id)
         .where(Phrase.word_id == word_id)
     )
@@ -215,11 +207,29 @@ async def retrieved_phrases(word_id: int):
 
 async def a_run():
     async with cursor:
-        cache = await retrieved_word_id([810])
-        # cache = await retrieved_phrases(4753)  # drink=4753
+        # cache = await retrieved_word_id([810])
+        cache = await retrieved_phrases(4753)  # drink=4753
         # print(len(cache))
         # res = await get_words(Request(), id=[830, 30])
-    print(json.dumps(cache))
+        print(json.dumps(cache))
+        # ======
+        # word_id = 4753
+        # stmt = (
+        #     sql.select(Phrase.id.label("phrase_id"), Definition.inflection)
+        #     .outerjoin(
+        #         Definition,
+        #         (Definition.word_id == Phrase.word_id)
+        #         & (
+        #             (Definition.part_of_speech == Phrase.part_of_speech)
+        #             | (Definition.part_of_speech == "noun")
+        #         ),
+        #     )
+        #     .where(Phrase.word_id == word_id)
+        #     .group_by(Phrase.id)
+        # )
+        # res = await cursor.execute(stmt)
+        # for row in res.fetchall():
+        #     print(row)
 
 
 if __name__ == "__main__":
