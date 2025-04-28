@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from abc import ABC
 from enum import StrEnum
 
 
@@ -9,16 +10,16 @@ class Role(StrEnum):
 
 
 @dataclass
-class Character:
+class CharacterBase(ABC):
     def __init__(self, role: Role, uid: str):
         self.role = role
         self.uid = uid
 
     @staticmethod
-    def from_dict(obj: dict) -> "Character":
+    def from_dict(obj: dict) -> "CharacterBase":
         role = obj.get("role", Role.GUEST)
         uid = obj.get("uid", "")
-        return Character(role, uid)
+        return CharacterBase(role, uid)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -28,7 +29,7 @@ class Character:
 
 
 if __name__ == "__main__":
-    character = Character.from_dict({"role": "civvy"})
-    c2 = Character.from_dict({"role": "premium"})
-    print(character.to_dict())
+    c1 = CharacterBase.from_dict({"role": "civvy"})
+    c2 = CharacterBase.from_dict({"role": "premium"})
+    print(c1.to_dict())
     print(c2.to_dict())

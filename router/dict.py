@@ -10,11 +10,12 @@ if __name__ == "__main__":
 
 import json
 from typing import Iterable, List, Any
-from models.role import Character, Role
+from models.role import Role
 from models.translate import TranslateIn
 from router.img import convert_asset_url
 from services.auth import guest_auth
 from services.dict import trace_word, retrieval_expression, retrieval_queue
+from services.character import Character
 from oxfordstu.oxfordstu_schema import *
 from fastapi import APIRouter, Depends, Query, Request, status, HTTPException
 import sqlalchemy as sql
@@ -95,7 +96,10 @@ async def search_word(
         .offset(page * max_length)
     )
     res = await cursor.execute(subq)
-    words = await retrieved_word_id((row[0] for row in res.fetchall()))
+    # TODO: support locate in search arguments
+    words = await retrieved_word_id(
+        (row[0] for row in res.fetchall()), Translation.zh_CN
+    )
     words = [convert_asset_url(w, req) for w in words]
     return {"status": 200, "content": json.dumps(words)}
 
@@ -135,7 +139,9 @@ async def get_word_max_id():
     return {"status": 200, "content": "%d" % max_id.scalar()}
 
 
-async def retrieved_word_id(word_ids: Iterable[int]) -> list[dict[str, Any]]:
+async def retrieved_word_id(
+    word_ids: Iterable[int], locate: sql.Column[str] | None = None
+) -> list[dict[str, Any]]:
     stmt = (
         sql.select(
             Word.word,
@@ -153,6 +159,10 @@ async def retrieved_word_id(word_ids: Iterable[int]) -> list[dict[str, Any]]:
         .where(Word.id.in_(word_ids))
         .order_by(sql.func.char_length(Word.word).asc())
     )
+    if not locate is None:
+        stmt = stmt.add_columns(locate.label("translate")).outerjoin(
+            Translation, Translation.definition_id == Definition.id
+        )
 
     res = await cursor.execute(stmt)
     cache = list[dict[str, Any]]()
@@ -212,24 +222,6 @@ async def a_run():
         # print(len(cache))
         # res = await get_words(Request(), id=[830, 30])
         print(json.dumps(cache))
-        # ======
-        # word_id = 4753
-        # stmt = (
-        #     sql.select(Phrase.id.label("phrase_id"), Definition.inflection)
-        #     .outerjoin(
-        #         Definition,
-        #         (Definition.word_id == Phrase.word_id)
-        #         & (
-        #             (Definition.part_of_speech == Phrase.part_of_speech)
-        #             | (Definition.part_of_speech == "noun")
-        #         ),
-        #     )
-        #     .where(Phrase.word_id == word_id)
-        #     .group_by(Phrase.id)
-        # )
-        # res = await cursor.execute(stmt)
-        # for row in res.fetchall():
-        #     print(row)
 
 
 if __name__ == "__main__":

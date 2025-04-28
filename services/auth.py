@@ -5,7 +5,8 @@ from firebase_admin import auth
 from fastapi import HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError, ExpiredSignatureError
-from models.role import Role, Character
+from models.role import Role
+from services.character import Character
 from __init__ import config
 
 oauth2 = OAuth2PasswordBearer("arbitrary url")
@@ -58,16 +59,11 @@ async def register_firebase(firebase_token: str, name: str | None):
 
 
 async def get_consume_tokens(character: Character):
-    claims = auth.get_user(character.uid).custom_claims or {}
-    print(claims.get("token"))
-    consume_tokens = claims.get("token")
+    # claims = auth.get_user(character.uid).custom_claims or {}
+    # print(claims.get("token"))
+    # consume_tokens = claims.get("token")
+    consume_tokens = character + 0.0
     return consume_tokens
-
-
-async def update_consume_token(character: Character, consume_tokens: float):
-    claims = auth.get_user(character.uid).custom_claims or {}
-    claims.update({"token": consume_tokens})
-    auth.set_custom_user_claims(character.uid, claims)
 
 
 def verify_api_access(token: Annotated[str, Depends(oauth2)]):
@@ -95,24 +91,22 @@ class ApiAuth:
         self.cost_token = cost_token
 
     def __call__(self, character: Character = Depends(verify_api_access)):
-        if character.role == Role.PREMIUM:
-            return character
         if self.role_index_map.get(self.role, -1) > ApiAuth.role_index_map.get(
             character.role, 0
         ):
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN, "You must register to access this feature"
+            msg = (
+                "You must register to access this feature"
+                if character.role == Role.GUEST
+                else "Permission deny"
             )
+            raise HTTPException(status.HTTP_403_FORBIDDEN, msg)
         if self.cost_token > 1e-6:
-            claims = auth.get_user(character.uid).custom_claims or {}
-            user_token = claims.get("token", 0.0)
-            if user_token < self.cost_token:
+            deposit = character.deposit()
+            if deposit < self.cost_token:
                 raise HTTPException(
                     status.HTTP_402_PAYMENT_REQUIRED, "Don't have enough token"
                 )
-            user_token -= self.cost_token
-            claims.update({"token": max(math.floor(user_token * 1e3) / 1e3, 0.0)})
-            auth.set_custom_user_claims(character.uid, claims)
+            _ = character - self.cost_token
         return character
 
 

@@ -6,7 +6,7 @@ from aiofiles import open as aopen
 from pathlib import Path
 from fastapi.security import OAuth2PasswordBearer
 from firebase_admin import auth
-from models.role import Character
+from services.character import Character
 from services.auth import (
     verify_firebase_token,
     register_firebase,

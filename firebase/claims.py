@@ -16,8 +16,8 @@ def list_users(cred: credentials.Certificate):
     if not _apps:
         initialize_app(cred)
     for user in cast(Iterable[auth.UserRecord], auth.list_users().iterate_all()):
-        # print(f"User: {user.uid} has {json.dumps(user._data, indent=4)}")
-        print(f"User: {user.uid} has {json.dumps(user.user_metadata, indent=4)}")
+        print(f"User: {user.uid} has {json.dumps(user._data, indent=4)}")
+        # print(f"User: {user.uid} has {json.dumps(user.user_metadata, indent=4)}")
         # provider: fa.ProviderUserInfo = user.provider_data[0]
         # print(f"User: {user.uid} has {user.provider_data}")
 
@@ -46,16 +46,12 @@ if __name__ == "__main__":
     uid = "kFIiU336lxQjtwSIiPyTA32boPt2"
     user: auth.UserRecord = auth.get_user(uid)
     claims = user.custom_claims or {}
-    # claims.update({"role": "premium"})
+    # claims.update({"extra": 200.0})
     # auth.set_custom_user_claims(uid, claims)
-    print(user.custom_claims)
-    # list_users()
-    p = Process(target=clear_expirations, args=(cred,))
-    p.daemon = False
-    p.start()
+    # print(user.custom_claims)
+    list_users(cred)
+    # p = Process(target=clear_expirations, args=(cred,))
+    # p.daemon = False
+    # p.start()
 
-    # time.sleep(2)
     print("terminal main process")
-    # email = "test123@test.com"
-    # user: auth.UserRecord = auth.get_user_by_email(email)
-    # print(user)
