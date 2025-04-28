@@ -9,6 +9,7 @@ import datetime
 import math
 from models.role import CharacterBase, Role
 from firebase_admin import auth
+from fastapi import HTTPException
 
 
 class Character(CharacterBase):
@@ -25,12 +26,9 @@ class Character(CharacterBase):
         claims = auth.get_user(self.uid).custom_claims or {}
         return claims.get("token", 0.0) + claims.get("gas", 0.0)
 
-    def fill_gas(self, gas: float = 200.0):
-        if self.role != Role.PREMIUM:
-            return
-        claims = auth.get_user(self.uid).custom_claims or {}
-        claims.update({"gas": gas})
-        auth.set_custom_user_claims(self.uid, claims)
+    def raise_withdraw(self, cost: float = 1e-3):
+        if self.deposit() < cost:
+            raise HTTPException(402, "You don't have enough tokens")
 
     def __add__(self, other: float) -> float:
         # if not isinstance(other, float):
@@ -70,11 +68,11 @@ class Character(CharacterBase):
             # self.role = Role.CIVVY
         return claims
 
-    def register_premium(self, interval: int = 30):
+    def register_premium(self, days: int = 30):
         if self.role != Role.CIVVY:
             return False
         start = datetime.datetime.now()
-        end = start + datetime.timedelta(days=interval)
+        end = start + datetime.timedelta(days=days)
         claims = auth.get_user(self.uid).custom_claims or {}
         claims.update(
             {
@@ -89,4 +87,4 @@ class Character(CharacterBase):
 
 
 if __name__ == "__main__":
-    print(f"{0.0 +1}")
+    print(math.pow(10, 1 - 2))

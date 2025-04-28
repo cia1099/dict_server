@@ -59,10 +59,10 @@ async def register_firebase(firebase_token: str, name: str | None):
 
 
 async def get_consume_tokens(character: Character):
-    # claims = auth.get_user(character.uid).custom_claims or {}
+    claims = auth.get_user(character.uid).custom_claims or {}
     # print(claims.get("token"))
-    # consume_tokens = claims.get("token")
-    consume_tokens = character + 0.0
+    consume_tokens = claims.get("token")
+    # consume_tokens = character + 0.0
     return consume_tokens
 
 
@@ -101,11 +101,7 @@ class ApiAuth:
             )
             raise HTTPException(status.HTTP_403_FORBIDDEN, msg)
         if self.cost_token > 1e-6:
-            deposit = character.deposit()
-            if deposit < self.cost_token:
-                raise HTTPException(
-                    status.HTTP_402_PAYMENT_REQUIRED, "Don't have enough token"
-                )
+            character.raise_withdraw(self.cost_token)
             _ = character - self.cost_token
         return character
 

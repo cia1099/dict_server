@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import cast, Iterable
 from firebase_admin import credentials, auth, initialize_app, _apps
 
+EXTRA_GAS = 200.0
+
 
 def clear_expirations(cred: credentials.Certificate):
     if not _apps:
@@ -16,6 +18,11 @@ def clear_expirations(cred: credentials.Certificate):
                 expire = now - (metadata.creation_timestamp or 0) // 1000
                 if expire > 1440 * 60:
                     ghosts.append(user)
+            else:
+                claims = user.custom_claims or {}
+                if claims.get("role") == "premium":
+                    claims.update({"gas": EXTRA_GAS})
+                    auth.set_custom_user_claims(user.uid, claims)
         page = page.get_next_page()
     # for user in ghosts:
     #     print(f"User: {user.uid} has {json.dumps(user._data, indent=4)}")

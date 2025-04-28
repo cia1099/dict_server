@@ -102,8 +102,7 @@ async def azure_chat(
             {"role": "user", "content": prompt},
         ]
     }
-    if character.deposit() < 1e-6:
-        raise HTTPException(402, "You don't have enough tokens")
+    character.raise_withdraw()
 
     async with ClientSession(host) as session:
         res = await session.post(endpoint, json=body, headers=headers)
