@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from abc import ABC
+from abc import ABC, abstractmethod
 from enum import StrEnum
 
 
@@ -15,21 +15,12 @@ class CharacterBase(ABC):
         self.role = role
         self.uid = uid
 
-    @staticmethod
-    def from_dict(obj: dict) -> "CharacterBase":
-        role = obj.get("role", Role.GUEST)
-        uid = obj.get("uid", "")
-        return CharacterBase(role, uid)
+    @abstractmethod
+    def from_dict(self):
+        pass
 
     def to_dict(self) -> dict:
         result: dict = {}
         result["role"] = self.role
         result["uid"] = self.uid
         return result
-
-
-if __name__ == "__main__":
-    c1 = CharacterBase.from_dict({"role": "civvy"})
-    c2 = CharacterBase.from_dict({"role": "premium"})
-    print(c1.to_dict())
-    print(c2.to_dict())

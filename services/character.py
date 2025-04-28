@@ -15,6 +15,12 @@ class Character(CharacterBase):
     def __init__(self, role: Role, uid: str):
         super().__init__(role, uid)
 
+    @staticmethod
+    def from_dict(obj: dict) -> "Character":
+        role = obj.get("role", Role.GUEST)
+        uid = obj.get("uid", "")
+        return Character(role, uid)
+
     def deposit(self) -> float:
         claims = auth.get_user(self.uid).custom_claims or {}
         return claims.get("token", 0.0) + claims.get("gas", 0.0)
