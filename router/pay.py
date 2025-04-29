@@ -7,7 +7,7 @@ from services.auth import civvy_auth, guest_auth
 router = APIRouter()
 
 
-@router.get("/payment/prices")
+@router.get("/subscript/prices")
 async def get_prices(lang: str = "en-US"):
     price = 100.0
     cut_price = round(price * 10, 2)

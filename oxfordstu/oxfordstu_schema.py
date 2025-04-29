@@ -82,9 +82,7 @@ class Explanation(Base):
 
 class Example(Base):
     __tablename__ = "examples"
-    __table_args__ = (
-        UniqueConstraint("explanation_id", "id", name="explanation_unique"),
-    )
+    __table_args__ = (UniqueConstraint("explanation_id", "id", name="example_unique"),)
     id = Column(Integer, primary_key=True)
     word_id = Column(Integer, ForeignKey("words.id"), nullable=False)
     explanation_id = Column(Integer, ForeignKey("explanations.id"), nullable=False)
@@ -105,7 +103,7 @@ class Asset(Base):
 class Translation(Base):
     __tablename__ = "translations"
     __table_args__ = (
-        UniqueConstraint("word_id", "definition_id", name="definition_unique"),
+        UniqueConstraint("word_id", "definition_id", name="translation_unique"),
         Index("UX_definition", "definition_id"),
     )
 
