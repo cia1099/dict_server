@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, Request, Response, HTTPException, Header
 from services.auth import premium_auth
 from database import remote_cursor
 import sqlalchemy as sql
+from services.auth import premium_auth
 
 router = APIRouter()
 
 
 @router.post("/supabase/write")
-async def supabase_write(req: Request):
+async def supabase_write(req: Request, _=Depends(premium_auth)):
     body = await req.body()
     query = body.decode("utf-8")
     try:
