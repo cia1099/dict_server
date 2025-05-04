@@ -4,12 +4,13 @@ from sqlalchemy import (
     Integer,
     DateTime,
     Boolean,
-    String,
+    Text,
     Float,
     ForeignKey,
     Index,
     Enum,
     UniqueConstraint,
+    ForeignKeyConstraint,
     CheckConstraint,
     # ARRAY, #only support postgresql
     create_engine,
@@ -29,50 +30,60 @@ class Acquaintance(Base):
         UniqueConstraint("word_id", "user_id", name="acquaintance_key"),
     )
     word_id = Column(Integer, primary_key=True)
-    user_id = Column(String, primary_key=True)
+    user_id = Column(Text, primary_key=True)
     acquaint = Column(Integer, nullable=False, default=0)
     last_learned_time = Column(Integer)
-    updated_at = Column(DateTime, nullable=False, default=datetime.now())
-    deleted = Column(Boolean, default=False, nullable=False)
 
 
 class Collection(Base):
     __tablename__ = "collections"
     __table_args__ = (
-        UniqueConstraint("user_id", "index", name="collection_key"),
-        UniqueConstraint("user_id", "name"),
+        UniqueConstraint("user_id", "name", name="collection_name"),
+        UniqueConstraint("user_id", "id", name="collection_key"),
     )
-    # id = Column(Integer, primary_key=True)
-    name = Column(String, primary_key=True)
-    user_id = Column(String, primary_key=True)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Text, primary_key=True)
+    name = Column(Text, nullable=False)
     index = Column(Integer, nullable=False)
     icon = Column(Integer)
     color = Column(Integer)
-    updated_at = Column(DateTime, nullable=False, default=datetime.now())
-    deleted = Column(Boolean, default=False, nullable=False)
 
 
 class CollectWord(Base):
     __tablename__ = "collect_words"
     __table_args__ = (
-        UniqueConstraint("word_id", "mark", "user_id", name="collection_unique"),
+        Index("Pop_collect_word", "word_id"),
+        UniqueConstraint(
+            "word_id", "collection_id", "user_id", name="collect_word_unique"
+        ),
+        ForeignKeyConstraint(
+            ["collection_id", "user_id"], ["collections.id", "collections.user_id"]
+        ),
     )
-    mark = Column(String, primary_key=True)
     word_id = Column(Integer, primary_key=True)
-    user_id = Column(String, primary_key=True)
-    updated_at = Column(DateTime, nullable=False, default=datetime.now())
-    deleted = Column(Boolean, default=False, nullable=False)
+    collection_id = Column(Integer, primary_key=True)
+    user_id = Column(Text, primary_key=True)
+
+
+"""
+CREATE TABLE collect_words (
+        word_id INTEGER NOT NULL, 
+        collection_id INTEGER NOT NULL, 
+        user_id TEXT NOT NULL, 
+        PRIMARY KEY (word_id, collection_id, user_id), 
+        CONSTRAINT collect_word_unique UNIQUE (word_id, collection_id, user_id), 
+        FOREIGN KEY(collection_id, user_id) REFERENCES collections (id, user_id)
+);
+"""
 
 
 class PunchDay(Base):
     __tablename__ = "punch_days"
-    user_id = Column(String, primary_key=True)
     date = Column(Integer, primary_key=True)
+    user_id = Column(Text, primary_key=True)
     study_minute = Column(Integer, nullable=False, default=0)
-    study_word_id = Column(String, nullable=False, default="")
+    study_word_ids = Column(Text, nullable=False, default="")
     punch_time = Column(Integer, default=int(datetime.now().timestamp()))
-    updated_at = Column(DateTime, nullable=False, default=datetime.now())
-    deleted = Column(Boolean, default=False, nullable=False)
 
 
 def create_acquaint(session: Session):
@@ -83,16 +94,16 @@ def create_acquaint(session: Session):
 
 
 def create_collection(session: Session):
-    c1 = Collection(user_id="123", index=1, name="test1")
-    c2 = Collection(user_id="123", index=0, name="test")
-    c3 = Collection(user_id="321", index=0, name="test")
+    c1 = Collection(user_id="123", index=0, name="test", id=1)
+    c2 = Collection(user_id="123", index=1, name="test1", id=2)
+    c3 = Collection(user_id="321", index=0, name="test", id=1)
     session.add_all([c1, c2, c3])
 
 
 def create_collect_word(session: Session):
-    c1 = CollectWord(user_id="123", word_id=810, mark="test1")
-    c2 = CollectWord(user_id="123", word_id=810, mark="test")
-    c3 = CollectWord(user_id="321", word_id=810, mark="test")
+    c1 = CollectWord(user_id="123", word_id=810, collection_id=1)
+    c2 = CollectWord(user_id="123", word_id=810, collection_id=2)
+    c3 = CollectWord(user_id="321", word_id=810, collection_id=1)
     session.add_all([c1, c2, c3])
 
 
@@ -115,9 +126,9 @@ if __name__ == "__main__":
     sys.path.append(parent_dir)
     from __init__ import config
 
-    DB_URL = config.DB_URL
+    DB_URL = config.REMOTE_DB
     # DB_URL = "sqlite:///test.db"
-    remote_engine = sql.create_engine(DB_URL or "")
+    remote_engine = sql.create_engine(DB_URL)
     Base.metadata.drop_all(remote_engine)
     Base.metadata.create_all(remote_engine)
     # Acquaintance.__table__.drop(remote_engine)
@@ -128,6 +139,8 @@ if __name__ == "__main__":
     with Session(remote_engine) as session:
         create_acquaint(session)
         create_collection(session)
-        create_collect_word(session)
         create_punch(session)
+        session.commit()
+        # insert collect_word need after collections builded and existed
+        create_collect_word(session)
         session.commit()

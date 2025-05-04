@@ -2,7 +2,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class APIConfig(BaseSettings):
-    DB_URL: str | None = None
+    DB_URL: str = ""
+    REMOTE_DB: str = ""
     SPEECH_REGION: str | None = None
     SPEECH_KEY: str | None = None
     AZURE_OPENAI_API_KEY: str | None = None

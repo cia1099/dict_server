@@ -8,6 +8,7 @@ from router.chat import router as chat_router
 from router.user import router as user_router
 from router.translate import router as translate_router
 from router.pay import router as pay_router
+from router.remote_db import router as db_router
 from database import db_life
 from firebase.helper import clear_expirations
 from __init__ import config
@@ -34,6 +35,7 @@ app.include_router(chat_router)
 app.include_router(user_router)
 app.include_router(translate_router)
 app.include_router(pay_router)
+app.include_router(db_router)
 
 
 @app.get("/")
