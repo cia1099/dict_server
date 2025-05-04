@@ -129,18 +129,24 @@ if __name__ == "__main__":
     DB_URL = config.REMOTE_DB
     # DB_URL = "sqlite:///test.db"
     remote_engine = sql.create_engine(DB_URL)
-    Base.metadata.drop_all(remote_engine)
-    Base.metadata.create_all(remote_engine)
+    # Base.metadata.drop_all(remote_engine)
+    # Base.metadata.create_all(remote_engine)
     # Acquaintance.__table__.drop(remote_engine)
     # # Collection.__table__.drop(remote_engine)
     # CollectWord.__table__.drop(remote_engine)
     # PunchDay.__table__.drop(remote_engine)
 
-    with Session(remote_engine) as session:
-        create_acquaint(session)
-        create_collection(session)
-        create_punch(session)
-        session.commit()
-        # insert collect_word need after collections builded and existed
-        create_collect_word(session)
-        session.commit()
+    # with Session(remote_engine) as session:
+    #     create_acquaint(session)
+    #     create_collection(session)
+    #     create_punch(session)
+    #     session.commit()
+    #     # insert collect_word need after collections builded and existed
+    #     create_collect_word(session)
+    #     session.commit()
+    with remote_engine.connect() as cursor:
+        query = sql.text(
+            "INSERT INTO collect_words (word_id, collection_id, user_id) VALUES (34, 1, '123')"
+        )
+        cursor.execute(query)
+        # cursor.commit()

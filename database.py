@@ -8,17 +8,22 @@ from __init__ import config
 async def db_life(app: FastAPI):
     # await cursor
     async with cursor:
-        yield
+        async with remote_cursor:
+            yield
+            await remote_cursor.rollback()
         await cursor.rollback()
     await engine.dispose()
+    await rengine.dispose()
 
 
 if __name__ != "__main__":
     engine = create_async_engine(config.DB_URL)
+    rengine = create_async_engine(config.REMOTE_DB)
     cursor: AsyncConnection = engine.connect()
+    remote_cursor: AsyncConnection = rengine.connect()
 else:
     local_db = "sqlite:///dictionary/oxfordstu.db"
-    remote_db = config.DB_URL
+    remote_db = config.REMOTE_DB
     import sqlalchemy as sql
     from sqlalchemy.orm import Session
     from oxfordstu.oxfordstu_schema import *
