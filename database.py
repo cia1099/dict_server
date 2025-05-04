@@ -8,19 +8,23 @@ from __init__ import config
 async def db_life(app: FastAPI):
     # await cursor
     async with cursor:
-        async with remote_cursor:
-            yield
-            await remote_cursor.rollback()
+        yield
         await cursor.rollback()
     await engine.dispose()
-    await rengine.dispose()
+    await remote_engine.dispose()
 
 
 if __name__ != "__main__":
     engine = create_async_engine(config.DB_URL)
-    rengine = create_async_engine(config.REMOTE_DB)
+    remote_engine = create_async_engine(
+        config.REMOTE_DB,
+        pool_size=10,
+        max_overflow=20,
+        pool_timeout=15,
+        pool_recycle=1800,
+    )
     cursor: AsyncConnection = engine.connect()
-    remote_cursor: AsyncConnection = rengine.connect()
+
 else:
     local_db = "sqlite:///dictionary/oxfordstu.db"
     remote_db = config.REMOTE_DB
@@ -30,10 +34,10 @@ else:
     from tqdm import tqdm
 
     local_engine = sql.create_engine(local_db)
-    remote_engine = sql.create_engine(remote_db)
-    Base.metadata.drop_all(remote_engine)
-    Base.metadata.create_all(remote_engine)
-    with Session(bind=remote_engine) as remote_session:
+    rengine = sql.create_engine(remote_db)
+    Base.metadata.drop_all(rengine)
+    Base.metadata.create_all(rengine)
+    with Session(bind=rengine) as remote_session:
         with Session(bind=local_engine) as local_session:
             stmts = [
                 sql.select(Word),
