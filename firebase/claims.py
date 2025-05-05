@@ -10,6 +10,7 @@ from datetime import datetime
 from multiprocessing import Process
 from firebase_admin import credentials, auth, initialize_app, _apps
 from __init__ import config
+from services.character import Character
 
 
 def list_users(cred: credentials.Certificate):
@@ -46,10 +47,17 @@ if __name__ == "__main__":
     uid = "kFIiU336lxQjtwSIiPyTA32boPt2"
     user: auth.UserRecord = auth.get_user(uid)
     claims = user.custom_claims or {}
+    char = Character.from_dict({"uid": uid, "role": claims.get("role")})
+    if char.register_premium():
+        user: auth.UserRecord = auth.get_user(uid)
+        claims = user.custom_claims or {}
+        print("successfully register premium")
+
     # claims.update({"extra": 200.0})
     # auth.set_custom_user_claims(uid, claims)
-    # print(user.custom_claims)
-    list_users(cred)
+    print(claims)
+    # print(json.dumps(user._data))
+    # list_users(cred)
     # p = Process(target=clear_expirations, args=(cred,))
     # p.daemon = False
     # p.start()

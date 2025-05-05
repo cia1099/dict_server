@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request, Response, HTTPException, Header
 from services.auth import premium_auth
 from database import remote_engine
 import sqlalchemy as sql
-from services.auth import premium_auth
+from services.auth import premium_auth, civvy_auth
 
 router = APIRouter()
 
@@ -19,3 +19,17 @@ async def supabase_write(req: Request, _=Depends(premium_auth)):
             await cursor.rollback()
             return {"status": 500, "content": "Failed to write data to Supabase"}
     return {"status": 200, "content": "Successfully write to Supabase"}
+
+
+@router.delete("/supabase/erase")
+async def supabase_delete(req: Request, _=Depends(civvy_auth)):
+    body = await req.body()
+    query = body.decode("utf-8")
+    async with remote_engine.connect() as cursor:
+        try:
+            await cursor.execute(sql.text(query))
+            await cursor.commit()
+        except:
+            await cursor.rollback()
+            return {"status": 500, "content": "Failed to erase data in Supabase"}
+    return {"status": 200, "content": "Successfully erase Supabase"}

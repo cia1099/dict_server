@@ -40,18 +40,18 @@ async def vertex_imagen(prompt: str) -> BytesIO:
     async with ClientSession(host) as session:
         res = await session.post(endpoint, json=body, headers=headers)
         jobj: dict = await res.json()
-        pred = jobj.get("predictions")
-        if pred:
-            bytes = base64.b64decode(pred[0]["bytesBase64Encoded"])
-            fp = BytesIO(bytes)
-            # pred[0].update({"bytesBase64Encoded": None})
-            # print(json.dumps(pred, indent=4))
-        else:
-            # print(json.dumps(jobj, indent=4))
-            # from router.img import generate_error_img
-            # fp = generate_error_img(jobj["error"]["message"])
-            err = jobj["error"]
-            raise HTTPException(jobj["code"], err["message"])
+    pred = jobj.get("predictions")
+    if pred:
+        bytes = base64.b64decode(pred[0]["bytesBase64Encoded"])
+        fp = BytesIO(bytes)
+        # pred[0].update({"bytesBase64Encoded": None})
+        # print(json.dumps(pred, indent=4))
+    else:
+        # print(json.dumps(jobj, indent=4))
+        # from router.img import generate_error_img
+        # fp = generate_error_img(jobj["error"]["message"])
+        err = jobj["error"]
+        raise HTTPException(jobj["code"], err["message"])
 
     if pred and __name__ == "__main__":
         img = Image.open(fp)
@@ -91,16 +91,16 @@ async def create_punch_cards(filename: str):
     async with ClientSession(host) as session:
         res = await session.post(endpoint, json=body, headers=headers)
         jobj: dict = await res.json()
-        preds = jobj.get("predictions")
-        if preds:
-            gen_byte = (base64.b64decode(pred["bytesBase64Encoded"]) for pred in preds)
-            f_ptrs = (BytesIO(byte) for byte in gen_byte)
-            for i, fp in enumerate(f_ptrs):
-                async with open(f"punch_card/{filename}_{i:02}.png", "wb") as f:
-                    await f.write(fp.getvalue())
-        else:
-            error = jobj["error"]
-            raise HTTPException(error["code"], error["message"])
+    preds = jobj.get("predictions")
+    if preds:
+        gen_byte = (base64.b64decode(pred["bytesBase64Encoded"]) for pred in preds)
+        f_ptrs = (BytesIO(byte) for byte in gen_byte)
+        for i, fp in enumerate(f_ptrs):
+            async with open(f"punch_card/{filename}_{i:02}.png", "wb") as f:
+                await f.write(fp.getvalue())
+    else:
+        error = jobj["error"]
+        raise HTTPException(error["code"], error["message"])
     remove_past3month_cards()
 
 

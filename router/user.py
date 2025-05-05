@@ -78,4 +78,4 @@ async def get_reset_password_page(mode: str, oobCode: str, apiKey: str):
     p = Path("templates/reset_password.html")
     async with aopen(str(p)) as f:
         html = await f.read()
-        return HTMLResponse(html)
+    return HTMLResponse(html)
