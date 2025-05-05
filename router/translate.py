@@ -3,7 +3,7 @@ import sqlalchemy as sql
 from models.translate import TranslateIn
 from oxfordstu.oxfordstu_schema import Translation
 
-from database import cursor
+from database import engine
 from services.auth import premium_auth
 
 router = APIRouter()
@@ -18,6 +18,7 @@ async def definition_translation(body: TranslateIn, _=Depends(premium_auth)):
     stmt = sql.select(body.locate()).where(
         Translation.definition_id == body.definition_id
     )
-    res = await cursor.execute(stmt)
+    async with engine.connect() as cursor:
+        res = await cursor.execute(stmt)
     tr = res.scalar_one_or_none() or ""
     return {"status": 200, "content": tr}

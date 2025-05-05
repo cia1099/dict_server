@@ -19,7 +19,7 @@ from services.character import Character
 from oxfordstu.oxfordstu_schema import *
 from fastapi import APIRouter, Depends, Query, Request, status, HTTPException
 import sqlalchemy as sql
-from database import cursor
+from database import engine
 
 # from typing import Annotated
 # from sqlalchemy.ext.asyncio import create_async_engine, AsyncConnection
@@ -56,7 +56,8 @@ async def retrieved_word(
         subq, TranslateIn.column(lang) if char.role == Role.PREMIUM else None
     )
 
-    res = await cursor.execute(stmt)
+    async with engine.connect() as cursor:
+        res = await cursor.execute(stmt)
     cache = []
     for map in res.mappings().fetchall():
         w = trace_word(retrieval_queue(map), cache)
@@ -95,7 +96,8 @@ async def search_word(
         .limit(max_length)
         .offset(page * max_length)
     )
-    res = await cursor.execute(subq)
+    async with engine.connect() as cursor:
+        res = await cursor.execute(subq)
     # TODO: support locate in search arguments
     words = await retrieved_word_id(
         (row[0] for row in res.fetchall()), Translation.zh_CN
@@ -135,7 +137,8 @@ async def get_phrases_from_word_id(word_id: int, _=Depends(guest_auth)):
 @router.get("/words/max_id")
 async def get_word_max_id():
     stmt = sql.select(sql.func.count(Word.id))
-    max_id = await cursor.execute(stmt)
+    async with engine.connect() as cursor:
+        max_id = await cursor.execute(stmt)
     return {"status": 200, "content": "%d" % max_id.scalar()}
 
 
@@ -164,7 +167,8 @@ async def retrieved_word_id(
             Translation, Translation.definition_id == Definition.id
         )
 
-    res = await cursor.execute(stmt)
+    async with engine.connect() as cursor:
+        res = await cursor.execute(stmt)
     cache = list[dict[str, Any]]()
     for map in res.mappings().fetchall():
         w = trace_word(retrieval_queue(map), cache)
@@ -203,7 +207,8 @@ async def retrieved_phrases(word_id: int):
         .outerjoin(Example, Example.explanation_id == Explanation.id)
         .where(Phrase.word_id == word_id)
     )
-    res = await cursor.execute(stmt)
+    async with engine.connect() as cursor:
+        res = await cursor.execute(stmt)
     cache = list[dict[str, Any]]()
     for map in res.mappings().fetchall():
         w = trace_word(retrieval_queue(map), cache)
@@ -216,12 +221,11 @@ async def retrieved_phrases(word_id: int):
 
 
 async def a_run():
-    async with cursor:
-        # cache = await retrieved_word_id([810])
-        cache = await retrieved_phrases(4753)  # drink=4753
-        # print(len(cache))
-        # res = await get_words(Request(), id=[830, 30])
-        print(json.dumps(cache))
+    # cache = await retrieved_word_id([810])
+    cache = await retrieved_phrases(4753)  # drink=4753
+    # print(len(cache))
+    # res = await get_words(Request(), id=[830, 30])
+    print(json.dumps(cache))
 
 
 if __name__ == "__main__":

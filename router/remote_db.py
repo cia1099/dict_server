@@ -17,5 +17,5 @@ async def supabase_write(req: Request, _=Depends(premium_auth)):
             await cursor.commit()
         except:
             await cursor.rollback()
-            return {"status": 400, "content": "Failed to write data to Supabase"}
+            return {"status": 500, "content": "Failed to write data to Supabase"}
     return {"status": 200, "content": "Successfully write to Supabase"}

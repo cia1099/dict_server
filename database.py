@@ -1,21 +1,19 @@
 from contextlib import asynccontextmanager
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncConnection
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.pool import NullPool
 from fastapi import FastAPI
 from __init__ import config
 
 
 @asynccontextmanager
 async def db_life(app: FastAPI):
-    # await cursor
-    async with cursor:
-        yield
-        await cursor.rollback()
+    yield
     await engine.dispose()
     await remote_engine.dispose()
 
 
 if __name__ != "__main__":
-    engine = create_async_engine(config.DB_URL)
+    engine = create_async_engine(config.DB_URL, poolclass=NullPool)
     remote_engine = create_async_engine(
         config.REMOTE_DB,
         pool_size=10,
@@ -23,7 +21,6 @@ if __name__ != "__main__":
         pool_timeout=15,
         pool_recycle=1800,
     )
-    cursor: AsyncConnection = engine.connect()
 
 else:
     local_db = "sqlite:///dictionary/oxfordstu.db"

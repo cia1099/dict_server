@@ -99,7 +99,7 @@ class ApiAuth:
                 if character.role == Role.GUEST
                 else "Permission deny"
             )
-            raise HTTPException(status.HTTP_403_FORBIDDEN, msg)
+            raise HTTPException(status.HTTP_406_NOT_ACCEPTABLE, msg)
         if self.cost_token > 1e-6:
             character.raise_withdraw(self.cost_token)
             _ = character - self.cost_token
