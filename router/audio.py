@@ -67,4 +67,4 @@ async def azure_audio(tts: Text2SpeechIn, _=Depends(civvy_auth)):
         fp = BytesIO()
         async for bytes in res.content.iter_chunked(1024):
             fp.write(bytes)
-        return StreamingResponse(read_ram_chunk(fp), media_type=f"audio/mp3")
+    return StreamingResponse(read_ram_chunk(fp), media_type=f"audio/mp3")

@@ -9,8 +9,12 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Enum,
+    Table,
+    SQLColumnExpression,
+    MetaData,
     UniqueConstraint,
     ForeignKeyConstraint,
+    PrimaryKeyConstraint,
     CheckConstraint,
     # ARRAY, #only support postgresql
     create_engine,
@@ -26,11 +30,11 @@ class Base(DeclarativeBase):
 class Acquaintance(Base):
     __tablename__ = "acquaintances"
     __table_args__ = (
-        Index("UX_acquaintance", "user_id"),
-        UniqueConstraint("word_id", "user_id", name="acquaintance_key"),
+        PrimaryKeyConstraint("user_id", "word_id"),
+        # UniqueConstraint("word_id", "user_id", name="acquaintance_key"),
     )
-    word_id = Column(Integer, primary_key=True)
-    user_id = Column(Text, primary_key=True)
+    word_id = Column(Integer)
+    user_id = Column(Text)
     acquaint = Column(Integer, nullable=False, default=0)
     last_learned_time = Column(Integer)
 
@@ -38,11 +42,12 @@ class Acquaintance(Base):
 class Collection(Base):
     __tablename__ = "collections"
     __table_args__ = (
+        PrimaryKeyConstraint("user_id", "id"),
         UniqueConstraint("user_id", "name", name="collection_name"),
         UniqueConstraint("user_id", "id", name="collection_key"),
     )
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Text, primary_key=True)
+    id = Column(Integer)
+    user_id = Column(Text)
     name = Column(Text, nullable=False)
     index = Column(Integer, nullable=False)
     icon = Column(Integer)
@@ -52,17 +57,16 @@ class Collection(Base):
 class CollectWord(Base):
     __tablename__ = "collect_words"
     __table_args__ = (
-        Index("Pop_collect_word", "word_id"),
-        UniqueConstraint(
-            "word_id", "collection_id", "user_id", name="collect_word_unique"
-        ),
+        Index("IX_collect_word", "user_id", "word_id"),
+        Index("IX_collect_word_in_id", "user_id", "collection_id"),
+        PrimaryKeyConstraint("user_id", "word_id", "collection_id"),
         ForeignKeyConstraint(
             ["collection_id", "user_id"], ["collections.id", "collections.user_id"]
         ),
     )
-    word_id = Column(Integer, primary_key=True)
-    collection_id = Column(Integer, primary_key=True)
-    user_id = Column(Text, primary_key=True)
+    word_id = Column(Integer)
+    collection_id = Column(Integer)
+    user_id = Column(Text)
 
 
 """
@@ -79,11 +83,32 @@ CREATE TABLE collect_words (
 
 class PunchDay(Base):
     __tablename__ = "punch_days"
-    date = Column(Integer, primary_key=True)
-    user_id = Column(Text, primary_key=True)
+    __table_args__ = (PrimaryKeyConstraint("user_id", "date"),)
+    date = Column(Integer)
+    user_id = Column(Text)
     study_minute = Column(Integer, nullable=False, default=0)
     study_word_ids = Column(Text, nullable=False, default="")
     punch_time = Column(Integer, default=int(datetime.now().timestamp()))
+
+
+def parse_condition(
+    tablename: str, user_id: str, exclude_ids: list[int]
+) -> SQLColumnExpression:
+    match tablename:
+        case Acquaintance.__tablename__:
+            return (Acquaintance.user_id == user_id) & (
+                Acquaintance.word_id.not_in(exclude_ids)
+            )
+        case Collection.__tablename__:
+            return (Collection.user_id == user_id) & (Collection.id.not_in(exclude_ids))
+        case CollectWord.__tablename__:
+            return (CollectWord.user_id == user_id) & (
+                CollectWord.word_id.not_in(exclude_ids)
+            )
+        case PunchDay.__tablename__:
+            return (PunchDay.user_id == user_id) & (PunchDay.date.not_in(exclude_ids))
+        case _:
+            raise ValueError("No this table name %s" % tablename)
 
 
 def create_acquaint(session: Session):
@@ -119,15 +144,15 @@ def create_punch(session: Session):
 
 if __name__ == "__main__":
     import sqlalchemy as sql
-    import os, sys
+    import os, sys, json
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)
     sys.path.append(parent_dir)
     from __init__ import config
 
-    DB_URL = config.REMOTE_DB
-    # DB_URL = "sqlite:///test.db"
+    # DB_URL = config.REMOTE_DB
+    DB_URL = "sqlite:///test.db"
     remote_engine = sql.create_engine(DB_URL)
     # Base.metadata.drop_all(remote_engine)
     # Base.metadata.create_all(remote_engine)
@@ -144,9 +169,28 @@ if __name__ == "__main__":
     #     # insert collect_word need after collections builded and existed
     #     create_collect_word(session)
     #     session.commit()
+    metadata = MetaData()
+    metadata.reflect(remote_engine)
+    print(", ".join(name for name in metadata.tables.keys()))
     with remote_engine.connect() as cursor:
-        query = sql.text(
-            "INSERT INTO collect_words (word_id, collection_id, user_id) VALUES (34, 1, '123')"
-        )
-        cursor.execute(query)
-        # cursor.commit()
+        #     query = (
+        #         sql.select(CollectWord)
+        #         .limit(200)
+        #         .offset(0)
+        #         .where(CollectWord.user_id.not_in([]))
+        #     )
+        #     # print(query)
+        #     res = cursor.execute(query)
+        ## dynamic select table by name
+        table = metadata.tables["acquaintances"]
+        # Table("acquaintances", MetaData(), autoload_with=remote_engine)
+        print(", ".join(table.columns.keys()))
+        stmt = sql.select(
+            *(sql.column(c) for c in table.c.keys() if c != "user_id")
+        ).where(Acquaintance.user_id == "123")
+        print(stmt)
+        res = cursor.execute(stmt)
+
+    encode = [dict(row) for row in res.mappings().all()]
+    print(json.dumps(encode))
+    # cursor.commit()
