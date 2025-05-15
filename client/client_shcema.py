@@ -61,7 +61,9 @@ class CollectWord(Base):
         Index("IX_collect_word_in_id", "user_id", "collection_id"),
         PrimaryKeyConstraint("user_id", "word_id", "collection_id"),
         ForeignKeyConstraint(
-            ["collection_id", "user_id"], ["collections.id", "collections.user_id"]
+            ["collection_id", "user_id"],
+            ["collections.id", "collections.user_id"],
+            ondelete="CASCADE",
         ),
     )
     word_id = Column(Integer)
@@ -151,8 +153,8 @@ if __name__ == "__main__":
     sys.path.append(parent_dir)
     from __init__ import config
 
-    # DB_URL = config.REMOTE_DB
-    DB_URL = "sqlite:///test.db"
+    DB_URL = config.REMOTE_DB
+    # DB_URL = "sqlite:///test.db"
     remote_engine = sql.create_engine(DB_URL)
     # Base.metadata.drop_all(remote_engine)
     # Base.metadata.create_all(remote_engine)
@@ -162,35 +164,18 @@ if __name__ == "__main__":
     # PunchDay.__table__.drop(remote_engine)
 
     # with Session(remote_engine) as session:
-    #     create_acquaint(session)
+    #     # create_acquaint(session)
     #     create_collection(session)
-    #     create_punch(session)
+    #     # create_punch(session)
     #     session.commit()
     #     # insert collect_word need after collections builded and existed
     #     create_collect_word(session)
     #     session.commit()
-    metadata = MetaData()
-    metadata.reflect(remote_engine)
-    print(", ".join(name for name in metadata.tables.keys()))
     with remote_engine.connect() as cursor:
-        #     query = (
-        #         sql.select(CollectWord)
-        #         .limit(200)
-        #         .offset(0)
-        #         .where(CollectWord.user_id.not_in([]))
-        #     )
-        #     # print(query)
-        #     res = cursor.execute(query)
-        ## dynamic select table by name
-        table = metadata.tables["acquaintances"]
-        # Table("acquaintances", MetaData(), autoload_with=remote_engine)
-        print(", ".join(table.columns.keys()))
-        stmt = sql.select(
-            *(sql.column(c) for c in table.c.keys() if c != "user_id")
-        ).where(Acquaintance.user_id == "123")
-        print(stmt)
-        res = cursor.execute(stmt)
+        delete = sql.delete(Collection).where(
+            (Collection.id == 1) & (Collection.user_id == "123")
+        )
+        cursor.execute(delete)
+        cursor.commit()
 
-    encode = [dict(row) for row in res.mappings().all()]
-    print(json.dumps(encode))
     # cursor.commit()

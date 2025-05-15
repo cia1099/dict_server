@@ -50,14 +50,14 @@ class Audio:
     @staticmethod
     def from_dict(obj: Any) -> "Audio":
         assert isinstance(obj, dict)
-        uk = from_str(obj.get("uk"))
-        us = from_str(obj.get("us"))
+        uk = obj.get("uk")
+        us = obj.get("us")
         return Audio(uk, us)
 
     def to_dict(self) -> dict:
         result: dict = {}
-        result["uk"] = from_str(self.uk)
-        result["us"] = from_str(self.us)
+        result["uk"] = self.uk
+        result["us"] = self.us
         return result
 
 

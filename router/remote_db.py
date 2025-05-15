@@ -38,13 +38,12 @@ async def supabase_delete(req: Request, _=Depends(civvy_auth)):
 
 
 @router.post("/supabase/pull")
-async def supabase_pull(pull: PullIn, page: int = 0, max_length: int = 200):
+async def supabase_pull(
+    pull: PullIn, page: int = 0, max_length: int = 200, _=Depends(civvy_auth)
+):
     table = metadata.tables.get(pull.tablename)
     if table is None:
-        return {
-            "status": status.HTTP_400_BAD_REQUEST,
-            "content": "No '%s' table in database" % pull.tablename,
-        }
+        raise HTTPException(400, "No '%s' table in database" % pull.tablename)
     condition = parse_condition(**pull.model_dump())
     stmt = (
         sql.select(*(sql.column(c) for c in table.c.keys() if c != "user_id"))

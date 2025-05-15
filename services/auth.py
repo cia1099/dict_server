@@ -61,8 +61,8 @@ async def register_firebase(firebase_token: str, name: str | None):
 async def get_consume_tokens(character: Character):
     claims = auth.get_user(character.uid).custom_claims or {}
     # print(claims.get("token"))
-    consume_tokens = claims.get("token")
-    # consume_tokens = character + 0.0
+    consume_tokens = claims.get("token", 0.0) + claims.get("gas", 0.0)
+    # consume_tokens = character - 0.0
     return consume_tokens
 
 
