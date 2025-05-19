@@ -4,13 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pyglossary = "*"
-mdict-utils = "*"
 gtts = "*"
-pyglet = "*"
-beautifulsoup4 = "*"
-lxml = "*"
-tqdm = "*"
 uvicorn = {extras = ["standard"], version = "*"}
 fastapi = "*"
 sqlalchemy = {extras = ["asyncio"], version = "*"}
@@ -29,6 +23,13 @@ python-jose = {extras = ["cryptography"], version = "*"}
 
 [dev-packages]
 black = {extras = ["d"], version = "*"}
+pyglet = "*"
+pyglossary = "*"
+mdict-utils = "*"
+beautifulsoup4 = "*"
+lxml = "*"
+tqdm = "*"
+opencc-python-reimplemented = "*"
 
 [requires]
 python_version = "3.12"

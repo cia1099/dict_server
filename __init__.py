@@ -6,6 +6,8 @@ class APIConfig(BaseSettings):
     REMOTE_DB: str = ""
     SPEECH_REGION: str | None = None
     SPEECH_KEY: str | None = None
+    TRANSLATOR_REGION: str | None = None
+    TRANSLATOR_KEY: str | None = None
     AZURE_OPENAI_API_KEY: str | None = None
     GCLOUD_SERVICE_FILE: str | None = None
     FIREBASE_ADMIN: str | None = None

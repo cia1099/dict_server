@@ -6,9 +6,9 @@ from sqlalchemy import Column
 class TranslateIn(BaseModel):
     text: str | None = None
     definition_id: int | None = None
-    lang: str
+    lang: str | None = None
 
-    def locate(self) -> Column[str]:
+    def locate(self) -> Column[str] | None:
         return TranslateIn.column(self.lang)
 
     @staticmethod
@@ -18,15 +18,15 @@ class TranslateIn(BaseModel):
                 return Translation.zh_CN
             case "zh-TW":
                 return Translation.zh_TW
-            case "ja-JP":
+            case "ja-JP" | "ja":
                 return Translation.ja_JP
-            case "ko-KR":
+            case "ko-KR" | "ko":
                 return Translation.ko_KR
-            case "vi-VN":
+            case "vi-VN" | "vi":
                 return Translation.vi_VN
-            case "ar-SA":
+            case "ar-SA" | "ar":
                 return Translation.ar_SA
-            case "th-TH":
+            case "th-TH" | "th":
                 return Translation.th_TH
             case _:
-                return Translation.zh_CN
+                return None
