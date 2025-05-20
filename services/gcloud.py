@@ -11,7 +11,7 @@ from fastapi import HTTPException
 
 from PIL import Image
 
-from __init__ import config
+from config import config
 
 
 async def vertex_imagen(prompt: str) -> BytesIO:

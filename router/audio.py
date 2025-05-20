@@ -10,7 +10,7 @@ from models.role import Role
 from models.text2speech import Text2SpeechIn
 from services.auth import civvy_auth
 from services.utils import iter_file, read_ram_chunk
-from __init__ import config
+from config import config
 
 
 router = APIRouter()

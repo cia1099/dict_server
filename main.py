@@ -11,7 +11,7 @@ from router.pay import router as pay_router
 from router.remote_db import router as db_router
 from database import db_life
 from firebase.helper import clear_expirations
-from __init__ import config
+from config import config
 
 
 def app_life(app: FastAPI):

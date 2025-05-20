@@ -13,7 +13,7 @@ from aiohttp import ClientSession
 from fastapi.responses import StreamingResponse
 from PIL import Image, ImageDraw, ImageFont
 
-from __init__ import config
+from config import config
 from models.role import Role
 from services.auth import ApiAuth
 from services.utils import read_ram_chunk, iter_file

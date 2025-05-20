@@ -2,7 +2,7 @@ import asyncio
 from io import BytesIO
 import pyglet
 from aiohttp import ClientSession, ClientResponseError
-from __init__ import config
+from config import config
 
 SPEECH_REGION = config.SPEECH_REGION
 SPEECH_KEY = config.SPEECH_KEY

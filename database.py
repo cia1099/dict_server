@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 from sqlalchemy import MetaData
 from fastapi import FastAPI
-from __init__ import config
+from config import config
 
 
 @asynccontextmanager

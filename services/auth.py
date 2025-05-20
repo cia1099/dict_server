@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError, ExpiredSignatureError
 from models.role import Role
 from services.character import Character
-from __init__ import config
+from config import config
 
 oauth2 = OAuth2PasswordBearer("arbitrary url")
 

@@ -8,7 +8,7 @@ from aiohttp import ClientSession
 
 from database import engine
 from services.auth import premium_auth
-from __init__ import config
+from config import config
 
 router = APIRouter()
 
@@ -55,8 +55,8 @@ async def azure_translate(
     async with ClientSession(host) as session:
         res = await session.post(endpoint, json=body, headers=headers, params=params)
         obj = await res.json()
-    err = obj.get("error")
-    if err:
+    if isinstance(obj, dict):
+        err = obj.get("error", {"code": 555, "message": "Azure failed"})
         raise HTTPException(err["code"], err["message"])
 
     # print(json.dumps(obj))

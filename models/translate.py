@@ -8,7 +8,7 @@ class TranslateIn(BaseModel):
     definition_id: int | None = None
     lang: str | None = None
 
-    def locate(self) -> Column[str] | None:
+    def locate(self) -> Column[str]:
         return TranslateIn.column(self.lang)
 
     @staticmethod
@@ -29,4 +29,4 @@ class TranslateIn(BaseModel):
             case "th-TH" | "th":
                 return Translation.th_TH
             case _:
-                return None
+                return Translation.en_US

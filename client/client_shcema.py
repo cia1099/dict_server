@@ -151,7 +151,7 @@ if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parent_dir = os.path.dirname(current_dir)
     sys.path.append(parent_dir)
-    from __init__ import config
+    from config import config
 
     DB_URL = config.REMOTE_DB
     # DB_URL = "sqlite:///test.db"

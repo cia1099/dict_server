@@ -114,6 +114,7 @@ class Translation(Base):
     vi_VN = Column(String)
     th_TH = Column(String)
     ar_SA = Column(String)
+    en_US = Column(String, default="")
 
 
 class Phrase(Base):

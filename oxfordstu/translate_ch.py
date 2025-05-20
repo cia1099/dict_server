@@ -1,11 +1,14 @@
 import asyncio
-from aiohttp import ClientSession
+from math import ceil
 from opencc import OpenCC
 from sqlalchemy import create_engine
 import sqlalchemy as sql
+from tqdm import tqdm
 from oxfordstu_schema import Translation
 import time
-from functools import reduce
+from typing import Iterable, Iterator, TypeVar
+
+T = TypeVar("T")
 
 if __name__ == "__main__":
     import os, sys
@@ -14,43 +17,19 @@ if __name__ == "__main__":
     parent_dir = os.path.dirname(current_dir)
     sys.path.append(parent_dir)
 
-from models.translate import TranslateIn
+from router.translate import azure_translate
+from log_config import log
 
 
-async def azure_translate(
-    texts: list[str],
-    src: str = "en",
-    langs: list[str] = ["ja", "ko", "vi", "ar", "th"],
-):
-    import json
-
-    host = "https://api.cognitive.microsofttranslator.com"
-    endpoint = "/translate"
-    params = [("api-version", "3.0"), ("from", src)] + [("to", lang) for lang in langs]
-    headers = {
-        "Content-Type": "application/json",
-        "Ocp-Apim-Subscription-Key": KEY,  # config.TRANSLATOR_KEY,
-        "Ocp-Apim-Subscription-Region": REGION,  # config.TRANSLATOR_REGION,
-    }
-    body = [{"Text": text} for text in texts]
-    async with ClientSession(host) as session:
-        res = await session.post(endpoint, json=body, headers=headers, params=params)
-        obj = await res.json()
-
-    # err = obj.get("error")
-    # if err:
-    #     raise HttpException(err["code"], err["message"])
-    # print(json.dumps(obj))
-    def lazy_result(obj: dict):
-        for trs in obj:
-            yield {
-                TranslateIn.column(tr["to"]).name: tr["text"]
-                for tr in trs.get("translations", [])
-            }
-
-    translate_maps = list(lazy_result(obj))
-    print(json.dumps(translate_maps))
-    return translate_maps
+def batch(size: int, it: Iterable[T]) -> Iterator[list[T]]:
+    batch = []
+    for item in it:
+        batch.append(item)
+        if len(batch) == size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
 
 
 async def future_delay(delay: float):
@@ -67,22 +46,42 @@ async def main():
     print("Elapsed time = %g" % (time.time() - tic))
 
 
+async def update_translate(url: str, batch_size: int = 10):
+    engine = create_engine(url)
+    stmt = sql.select(Translation.definition_id.label("id"), Translation.zh_CN).limit(5)
+    cc = OpenCC("s2tw")
+    with engine.connect() as cursor:
+        res = cursor.execute(stmt)
+        seq = res.mappings().all()
+        for rows in tqdm(batch(batch_size, seq), total=ceil(len(seq) / batch_size)):
+            texts = [row["zh_CN"] for row in rows]
+            try:
+                translate_maps = await azure_translate(texts, src="zh-Hans")
+                for i, map in enumerate(translate_maps):
+                    map["zh_TW"] = cc.convert(texts[i])
+                    id = rows[i]["id"]
+                    stmt = (
+                        sql.update(Translation)
+                        .where(Translation.definition_id == id)
+                        .values(**map)
+                    )
+                    cursor.execute(stmt)
+            except Exception as e:
+                log.info("%s" % e)
+                log.warning(
+                    "Failed translate id at [%s]"
+                    % ", ".join(["%d" % row["id"] for row in rows])
+                )
+        cursor.commit()
+
+
 if __name__ == "__main__":
-    # DB_URL = "sqlite:///dictionary/oxfordstu.db"
-    # engine = create_engine(DB_URL)
-    # stmt = sql.select(Translation.definition_id, Translation.zh_CN).limit(10)
-    # with engine.connect() as cursor:
-    #     res = cursor.execute(stmt)
-    # cc = OpenCC("s2tw")
-    # for row in res.all():
-    #     new_row = (*row, cc.convert(row[1]))
-    #     print(new_row)
-    # stmt = sql.update(Translation).where(Translation.definition_id == 1).values()
-    # print(stmt)
-    # c = TranslateIn.column("ja")
-    # print(c.name)
-    asyncio.run(
-        azure_translate(
-            ["去你妈的，我想把你推到我的床上", "你好吗，我要点一杯可乐"], src="zh-Hans"
-        )
-    )
+    DB_URL = "sqlite:///dictionary/oxfordstu.db"
+    asyncio.run(update_translate(DB_URL, 2))
+    # asyncio.run(
+    #     azure_translate(
+    #         ["去你妈的，我想把你推到我的床上", "你好吗，我要点一杯可乐"], src="zh-Hans"
+    #     )
+    # )
+    # for b in batch(3, range(10)):
+    #     print(", ".join(("%d" % n for n in b)))

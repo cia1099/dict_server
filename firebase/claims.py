@@ -9,7 +9,7 @@ import json, time
 from datetime import datetime
 from multiprocessing import Process
 from firebase_admin import credentials, auth, initialize_app, _apps
-from __init__ import config
+from config import config
 from services.character import Character
 
 

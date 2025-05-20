@@ -25,7 +25,7 @@ from fastapi import (
 )
 from aiohttp import ClientSession, FormData
 from pydub import AudioSegment
-from __init__ import config
+from config import config
 from models.chat import ChatIn
 from models.role import Role
 from services.character import Character
