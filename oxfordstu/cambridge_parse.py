@@ -22,8 +22,7 @@ def create_cambridge_word(
             pos = entry.find("span", class_="pos").get_text(strip=True)
         except:
             pos = soup.find("span", class_="pos")
-            if pos is not None:
-                pos = pos.get_text(strip=True)
+            pos = pos.get_text(strip=True) if pos else "abbreviation"
         cn_def = "、".join(
             [h5.get_text(strip=True) for h5 in entry.find_all("span", class_="cn_def")]
         )
@@ -35,7 +34,7 @@ def create_cambridge_word(
         word_defs = []
         for def_block in entry.find_all("div", class_="def-block"):
             en_def = def_block.find("span", class_="en_def")
-            explain = en_def.get_text(strip=True) if en_def else None
+            explain = en_def.get_text().rstrip() if en_def else None
             if explain is None:
                 msg = f"{word} can't find explain(null) conflicted schema constraint db in cambridge"
                 log.warning(msg) if log else print(msg)
@@ -94,7 +93,7 @@ def convert_subscript(subscript: str | None):
 
 if __name__ == "__main__":
     MDX_URL = "/Users/otto/Downloads/dict/cambridge4.mdx"
-    query = "drink down"
+    query = "mm"
     word = create_cambridge_word(query, mdx_url=MDX_URL)
     # print(word)
     print(json.dumps(word))

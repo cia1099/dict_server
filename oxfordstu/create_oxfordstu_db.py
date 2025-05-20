@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os, re
 
@@ -24,6 +25,7 @@ from macmillan_parse import create_macmillan_word
 from cambridge_parse import create_cambridge_word
 from thesaurus import speech_thesaurus, valid_speeches
 from idioms_phrases import build_macmillan_phrase
+from translate_ch import update_translate
 from model import PartWord, Thesaurus, Def
 from services.dict import get_indexes
 from insert_db import *
@@ -229,6 +231,7 @@ if __name__ == "__main__":
     Base.metadata.create_all(engine)
     test_words = [
         "drink",
+        "km",
         # "abduct",
         "abet",
         "off the record",
@@ -259,9 +262,10 @@ if __name__ == "__main__":
         cursor.commit()
         modified_null_alphabet(cursor)
         cursor.commit()
-        toc = datetime.now()
-        log.info(f"{toc.replace(microsecond=0)} finished progress ...")
-        elapsed = toc.timestamp() - tic.timestamp()
-        log.info(
-            f"Elapsed time = {elapsed//3600:02.0f}:{(elapsed%3600)//60:02.0f}:{(elapsed%3600)%60:02.0f}"
-        )
+    asyncio.run(update_translate(DB_URL))
+    toc = datetime.now()
+    log.info(f"{toc.replace(microsecond=0)} finished progress ...")
+    elapsed = toc.timestamp() - tic.timestamp()
+    log.info(
+        f"Elapsed time = {elapsed//3600:02.0f}:{(elapsed%3600)//60:02.0f}:{(elapsed%3600)%60:02.0f}"
+    )

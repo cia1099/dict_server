@@ -48,8 +48,9 @@ async def main():
 
 async def update_translate(url: str, batch_size: int = 10):
     engine = create_engine(url)
-    stmt = sql.select(Translation.definition_id.label("id"), Translation.zh_CN).limit(5)
+    stmt = sql.select(Translation.definition_id.label("id"), Translation.zh_CN)
     cc = OpenCC("s2tw")
+    log.debug("Start updating translation table with Azure")
     with engine.connect() as cursor:
         res = cursor.execute(stmt)
         seq = res.mappings().all()
