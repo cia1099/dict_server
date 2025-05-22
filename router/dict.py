@@ -70,14 +70,19 @@ async def retrieved_word(
 
 @router.get("/search")
 async def search_word(
-    req: Request, word: str, page: int = 0, max_length: int = 20, _=Depends(guest_auth)
+    req: Request,
+    word: str,
+    lang: str,
+    page: int = 0,
+    max_length: int = 20,
+    _=Depends(guest_auth),
 ):
     query = word.strip()
     if len(query) == 0:
         return {"status": 200, "content": "[]"}
     contains_unicode = any(ord(char) > 127 for char in query)
     condition = (
-        Translation.zh_CN.regexp_match(rf"\b{query}")
+        TranslateIn.column(lang).regexp_match(rf"\b{query}")
         if contains_unicode
         else (
             Definition.inflection.regexp_match(rf"\b{query}")

@@ -168,6 +168,21 @@ async def punch_card(index: int):
     )
 
 
+@router.get("/auth/cover/edge.png")
+async def get_app_cover_edge():
+    try:
+        p = Path(f"punch_card/edge.png")
+        async with open(str(p), "rb") as f:
+            file_size = os.fstat(f.fileno()).st_size
+            return Response(
+                await f.read(),
+                media_type=f"image/{p.suffix[1:]}",
+                headers={"Content-Length": str(file_size)},
+            )
+    except:
+        raise HTTPException(404, detail=f"{p} not found or destroyed")
+
+
 def generate_error_img(message: str, size: int = 512) -> BytesIO:
     img = Image.new("RGB", (size, size), (255, 255, 255))
     draw = ImageDraw.Draw(img)
@@ -222,18 +237,18 @@ def convert_asset_url(word_dict: dict, req: Request):
         asset = replace_root(asset)
         p = Path(asset)
         asset_url = req.url_for("_".join(p.parent.parts), image_name=p.name)
-        word["asset"] = str(asset_url).replace("http", "https")
+        word["asset"] = str(asset_url)  # .replace("http", "https")
     for i, word_def in enumerate(word["definitions"]):
         if word_def.get("audio_us"):
             audio = replace_root(word_def["audio_us"])
             p = Path(audio)
             audio_url = req.url_for("_".join(p.parent.parts), filename=p.name)
-            word["definitions"][i]["audio_us"] = str(audio_url).replace("http", "https")
+            word["definitions"][i]["audio_us"] = str(audio_url)
         if word_def.get("audio_uk"):
             audio = replace_root(word_def["audio_uk"])
             p = Path(audio)
             audio_url = req.url_for("_".join(p.parent.parts), filename=p.name)
-            word["definitions"][i]["audio_uk"] = str(audio_url).replace("http", "https")
+            word["definitions"][i]["audio_uk"] = str(audio_url)
 
     return word
 
