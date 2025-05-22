@@ -69,10 +69,6 @@ async def update_translate(url: str, batch_size: int = 10):
                     cursor.execute(stmt)
             except Exception as e:
                 log.info("%s" % e)
-                log.warning(
-                    "Failed translate id at [%s]"
-                    % ", ".join(["%d" % row["id"] for row in rows])
-                )
         cursor.commit()
 
 

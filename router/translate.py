@@ -18,8 +18,6 @@ async def definition_translation(body: TranslateIn, _=Depends(premium_auth)):
     if not body.definition_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "null value in definition_id")
     lang = body.locate()
-    if lang is None:
-        return {"status": 200, "content": ""}
     stmt = sql.select(lang).where(Translation.definition_id == body.definition_id)
     async with engine.connect() as cursor:
         res = await cursor.execute(stmt)

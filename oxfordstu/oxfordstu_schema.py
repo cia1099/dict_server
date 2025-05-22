@@ -48,7 +48,9 @@ class Definition(Base):
         UniqueConstraint("word_id", "id", name="definition_unique"),
     )
     id = Column(Integer, primary_key=True)
-    word_id = Column(Integer, ForeignKey("words.id"), index=True, nullable=False)
+    word_id = Column(
+        Integer, ForeignKey("words.id", ondelete="CASCADE"), index=True, nullable=False
+    )
     # part_of_speech = Column(Enum(PartOfSpeech))
     part_of_speech = Column(String)
     inflection = Column(String)
@@ -70,11 +72,18 @@ class Explanation(Base):
         ),
     )
     id = Column(Integer, primary_key=True)
-    word_id = Column(Integer, ForeignKey("words.id"), index=True, nullable=False)
-    definition_id = Column(
-        Integer, ForeignKey("definitions.id"), index=True, nullable=True
+    word_id = Column(
+        Integer, ForeignKey("words.id", ondelete="CASCADE"), index=True, nullable=False
     )
-    phrase_id = Column(Integer, ForeignKey("phrases.id"), index=True, nullable=True)
+    definition_id = Column(
+        Integer,
+        ForeignKey("definitions.id", ondelete="CASCADE"),
+        index=True,
+        nullable=True,
+    )
+    phrase_id = Column(
+        Integer, ForeignKey("phrases.id", ondelete="CASCADE"), index=True, nullable=True
+    )
     explain = Column(String, nullable=False)
     subscript = Column(String, nullable=True, default=None)
     create_at = Column(Integer, default=int(datetime.now().timestamp()), nullable=False)
@@ -84,9 +93,14 @@ class Example(Base):
     __tablename__ = "examples"
     __table_args__ = (UniqueConstraint("explanation_id", "id", name="example_unique"),)
     id = Column(Integer, primary_key=True)
-    word_id = Column(Integer, ForeignKey("words.id"), index=True, nullable=False)
+    word_id = Column(
+        Integer, ForeignKey("words.id", ondelete="CASCADE"), index=True, nullable=False
+    )
     explanation_id = Column(
-        Integer, ForeignKey("explanations.id"), index=True, nullable=False
+        Integer,
+        ForeignKey("explanations.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
     )
     example = Column(String)
 
@@ -95,7 +109,9 @@ class Asset(Base):
     __tablename__ = "assets"
     __table_args__ = (UniqueConstraint("word_id", "id", name="word_unique"),)
     id = Column(Integer, primary_key=True)
-    word_id = Column(Integer, ForeignKey("words.id"), index=True, nullable=False)
+    word_id = Column(
+        Integer, ForeignKey("words.id", ondelete="CASCADE"), index=True, nullable=False
+    )
     filename = Column(String, nullable=False)
 
 
@@ -105,8 +121,12 @@ class Translation(Base):
         UniqueConstraint("word_id", "definition_id", name="translation_unique"),
     )
 
-    definition_id = Column(Integer, ForeignKey("definitions.id"), primary_key=True)
-    word_id = Column(Integer, ForeignKey("words.id"), index=True, nullable=False)
+    definition_id = Column(
+        Integer, ForeignKey("definitions.id", ondelete="CASCADE"), primary_key=True
+    )
+    word_id = Column(
+        Integer, ForeignKey("words.id", ondelete="CASCADE"), index=True, nullable=False
+    )
     zh_CN = Column(String)
     zh_TW = Column(String)
     ja_JP = Column(String)
@@ -121,7 +141,9 @@ class Phrase(Base):
     __tablename__ = "phrases"
     __table_args__ = (UniqueConstraint("phrase", "word_id", name="phrase_unique"),)
     id = Column(Integer, primary_key=True)
-    word_id = Column(Integer, ForeignKey("words.id"), index=True, nullable=False)
+    word_id = Column(
+        Integer, ForeignKey("words.id", ondelete="CASCADE"), index=True, nullable=False
+    )
     phrase = Column(String, nullable=False, unique=True)
     part_of_speech = Column(String, nullable=False)
     frequency = Column(Float, default=None)
