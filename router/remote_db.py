@@ -1,6 +1,7 @@
 import json
 from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
 from models.pull import PullIn
+from models.report import ReportIn
 from services.auth import Character
 from client.client_shcema import Acquaintance, ReportIssue, parse_condition
 from database import remote_engine, metadata
@@ -60,10 +61,17 @@ async def supabase_pull(
 
 
 @router.post("/report/issue")
-async def report_issue(req: Request, character: Character = Depends(member_auth)):
-    body = await req.body()
-    report = json.loads(body)
-    stmt = pg_insert(ReportIssue).values({**report, "user_id": character.uid})
+async def report_issue(report: ReportIn, character: Character = Depends(member_auth)):
+    report.user_id = character.uid
+    await record_issue(report)
+    return {
+        "status": 200,
+        "content": "We've received your report. We'll resolve this ASAP.",
+    }
+
+
+async def record_issue(report: ReportIn):
+    stmt = pg_insert(ReportIssue).values(report.model_dump())
     stmt = stmt.on_conflict_do_update(
         index_elements=["word_id", "user_id"],
         set_={
@@ -77,8 +85,4 @@ async def report_issue(req: Request, character: Character = Depends(member_auth)
             await cursor.commit()
         except:
             await cursor.rollback()
-            return {"status": 500, "content": "Oops~ there is something error"}
-    return {
-        "status": 200,
-        "content": "We've received your report. We'll resolve this ASAP.",
-    }
+            raise HTTPException(500, "Oops~ there is something wrong")

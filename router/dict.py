@@ -10,6 +10,7 @@ if __name__ == "__main__":
 
 import json
 from typing import Iterable, List, Any
+from models.report import ReportIn
 from models.role import Role
 from models.translate import TranslateIn
 from router.img import convert_asset_url
@@ -17,7 +18,15 @@ from services.auth import guest_auth
 from services.dict import trace_word, retrieval_expression, retrieval_queue
 from services.character import Character
 from oxfordstu.oxfordstu_schema import *
-from fastapi import APIRouter, Depends, Query, Request, status, HTTPException
+from fastapi import (
+    APIRouter,
+    Depends,
+    Query,
+    Request,
+    BackgroundTasks,
+    status,
+    HTTPException,
+)
 import sqlalchemy as sql
 from database import engine
 
@@ -111,16 +120,29 @@ async def search_word(
 
 @router.get("/words")
 async def get_words(
-    req: Request, id: List[int] = Query(default=[]), _=Depends(guest_auth)
+    req: Request,
+    bg_task: BackgroundTasks,
+    id: List[int] = Query(default=[]),
+    _=Depends(guest_auth),
 ):
     words = await retrieved_word_id(id)
     words = [convert_asset_url(w, req) for w in words]
-    content = (
-        json.dumps(words)
-        if len(words) == len(id)
-        else f"word@{[d for d in id if d not in (w['word_id'] for w in words)]} not found"
-    )
-    return {"status": 200 if len(words) == len(id) else 404, "content": content}
+    if len(words) == len(id):
+        return {"status": 200, "content": json.dumps(words)}
+    else:
+        failed_ids = [d for d in id if d not in (w["word_id"] for w in words)]
+        stmt = sql.select(Word).where(Word.id.in_(failed_ids))
+        async with engine.connect() as cursor:
+            res = await cursor.execute(stmt)
+        reports = (
+            ReportIn(word_id=row["id"], word=row["word"], issue="trace word error")
+            for row in res.mappings().all()
+        )
+        from router.remote_db import record_issue
+
+        for report in reports:
+            bg_task.add_task(record_issue, report)
+        return {"status": 404, "content": f"word@{failed_ids} not found"}
 
 
 @router.get("/word_id/{word_id}")
