@@ -81,8 +81,9 @@ async def search_word(
     if len(query) == 0:
         return {"status": 200, "content": "[]"}
     contains_unicode = any(ord(char) > 127 for char in query)
+    locate = TranslateIn.column(lang)
     condition = (
-        TranslateIn.column(lang).regexp_match(rf"\b{query}")
+        locate.regexp_match(rf"\b{query}")
         if contains_unicode
         else (
             Definition.inflection.regexp_match(rf"\b{query}")
@@ -103,10 +104,7 @@ async def search_word(
     )
     async with engine.connect() as cursor:
         res = await cursor.execute(subq)
-    # TODO: support locate in search arguments
-    words = await retrieved_word_id(
-        (row[0] for row in res.fetchall()), Translation.zh_CN
-    )
+    words = await retrieved_word_id((row[0] for row in res.fetchall()), locate)
     words = [convert_asset_url(w, req) for w in words]
     return {"status": 200, "content": json.dumps(words)}
 

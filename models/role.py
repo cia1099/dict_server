@@ -5,7 +5,7 @@ from enum import StrEnum
 
 class Role(StrEnum):
     GUEST = "guest"
-    CIVVY = "civvy"
+    MEMBER = "member"
     PREMIUM = "premium"
 
 

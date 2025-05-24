@@ -20,7 +20,7 @@ from services.utils import read_ram_chunk, iter_file
 from services.gcloud import vertex_imagen, create_punch_cards
 
 router = APIRouter()
-img_auth = ApiAuth(Role.CIVVY, cost_token=2)
+img_auth = ApiAuth(Role.MEMBER, cost_token=2)
 
 
 @router.get("/dictionary/img/thumb/{image_name}")
@@ -132,8 +132,8 @@ async def imagen(prompt: str, size: int = 256, _=Depends(img_auth)):
 
 @router.get("/imagen/punch/card/qr_code")
 async def qr_code():
+    p = Path(f"punch_card/qr_code.png")
     try:
-        p = Path(f"punch_card/qr_code.png")
         async with open(str(p), "rb") as f:
             file_size = os.fstat(f.fileno()).st_size
             return Response(
@@ -170,8 +170,8 @@ async def punch_card(index: int):
 
 @router.get("/auth/cover/edge.png")
 async def get_app_cover_edge():
+    p = Path(f"punch_card/edge.png")
     try:
-        p = Path(f"punch_card/edge.png")
         async with open(str(p), "rb") as f:
             file_size = os.fstat(f.fileno()).st_size
             return Response(

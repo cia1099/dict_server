@@ -49,6 +49,7 @@ async def main():
 async def update_translate(url: str, batch_size: int = 10):
     engine = create_engine(url)
     stmt = sql.select(Translation.definition_id.label("id"), Translation.zh_CN)
+    stmt = stmt.where(Translation.ar_SA == None)
     cc = OpenCC("s2tw")
     log.debug("Start updating translation table with Azure")
     with engine.connect() as cursor:
@@ -68,16 +69,32 @@ async def update_translate(url: str, batch_size: int = 10):
                     )
                     cursor.execute(stmt)
             except Exception as e:
-                log.info("%s" % e)
+                log.critical("%s" % e)
         cursor.commit()
 
 
 if __name__ == "__main__":
-    DB_URL = "sqlite:///dictionary/oxfordstu.db"
-    asyncio.run(update_translate(DB_URL, 2))
+    SRC_DB = "sqlite:///dictionary/05232025_oxfordstu.db"
+    DST_DB = "sqlite:///dictionary/oxfordstu.db"
+    # src_engine = create_engine(SRC_DB)
+    # dst_engine = create_engine(DST_DB)
+    # stmt = sql.select(Translation).where(Translation.ar_SA != None)  # .limit(5)
+    # with src_engine.connect() as src:
+    #     res = src.execute(stmt)
+    # update = sql.update(Translation)
+    # exclude = ["definition_id", "zh_CN", "word_id", "en_US"]
+    # with dst_engine.connect() as dst:
+    #     for row in tqdm(res.mappings().all()):
+    #         id = row.get("definition_id")
+    #         values = {k: row[k] for k in row if k not in exclude}
+    #         dst.execute(update.where(Translation.definition_id == id).values(**values))
+    #     dst.commit()
+
+    asyncio.run(update_translate(DST_DB, batch_size=50))
     # asyncio.run(
     #     azure_translate(
-    #         ["去你妈的，我想把你推到我的床上", "你好吗，我要点一杯可乐"], src="zh-Hans"
+    #         ["record", "drink"],
+    #         src="en",
     #     )
     # )
     # for b in batch(3, range(10)):

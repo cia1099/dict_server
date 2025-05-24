@@ -1,10 +1,12 @@
 import json
 from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
 from models.pull import PullIn
-from client.client_shcema import Acquaintance, parse_condition
+from services.auth import Character
+from client.client_shcema import Acquaintance, ReportIssue, parse_condition
 from database import remote_engine, metadata
 import sqlalchemy as sql
-from services.auth import premium_auth, civvy_auth
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from services.auth import premium_auth, member_auth
 
 router = APIRouter()
 
@@ -24,7 +26,7 @@ async def supabase_write(req: Request, _=Depends(premium_auth)):
 
 
 @router.delete("/supabase/erase")
-async def supabase_delete(req: Request, _=Depends(civvy_auth)):
+async def supabase_delete(req: Request, _=Depends(member_auth)):
     body = await req.body()
     query = body.decode("utf-8")
     async with remote_engine.connect() as cursor:
@@ -39,7 +41,7 @@ async def supabase_delete(req: Request, _=Depends(civvy_auth)):
 
 @router.post("/supabase/pull")
 async def supabase_pull(
-    pull: PullIn, page: int = 0, max_length: int = 200, _=Depends(civvy_auth)
+    pull: PullIn, page: int = 0, max_length: int = 200, _=Depends(member_auth)
 ):
     table = metadata.tables.get(pull.tablename)
     if table is None:
@@ -55,3 +57,28 @@ async def supabase_pull(
         res = await cursor.execute(stmt)
     encode = [dict(row) for row in res.mappings().all()]
     return {"status": 200, "content": json.dumps(encode)}
+
+
+@router.post("/report/issue")
+async def report_issue(req: Request, character: Character = Depends(member_auth)):
+    body = await req.body()
+    report = json.loads(body)
+    stmt = pg_insert(ReportIssue).values({**report, "user_id": character.uid})
+    stmt = stmt.on_conflict_do_update(
+        index_elements=["word_id", "user_id"],
+        set_={
+            "issue": stmt.excluded.issue,
+            "time": stmt.excluded.time,
+        },
+    )
+    async with remote_engine.connect() as cursor:
+        try:
+            await cursor.execute(stmt)
+            await cursor.commit()
+        except:
+            await cursor.rollback()
+            return {"status": 500, "content": "Oops~ there is something error"}
+    return {
+        "status": 200,
+        "content": "We've received your report. We'll resolve this ASAP.",
+    }

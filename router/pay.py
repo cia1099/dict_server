@@ -2,7 +2,7 @@ import json, math
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
 
 from services.character import Character
-from services.auth import civvy_auth, guest_auth
+from services.auth import member_auth, guest_auth
 
 router = APIRouter()
 
@@ -32,6 +32,6 @@ async def advertisement(times: int = 1, character: Character = Depends(guest_aut
 
 
 @router.get("/subscript/premium")
-async def subscript_premium(character: Character = Depends(civvy_auth)):
+async def subscript_premium(character: Character = Depends(member_auth)):
     character.register_premium(1)
     return {"status": 200, "content": "Successful subscription"}

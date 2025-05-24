@@ -13,7 +13,7 @@ from services.auth import (
     verify_api_access,
     get_consume_tokens,
 )
-from services.auth import oauth2, civvy_auth, guest_auth
+from services.auth import oauth2, guest_auth
 
 router = APIRouter()
 

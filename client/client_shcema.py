@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import (
     Column,
     Integer,
@@ -71,18 +71,6 @@ class CollectWord(Base):
     user_id = Column(Text)
 
 
-"""
-CREATE TABLE collect_words (
-        word_id INTEGER NOT NULL, 
-        collection_id INTEGER NOT NULL, 
-        user_id TEXT NOT NULL, 
-        PRIMARY KEY (word_id, collection_id, user_id), 
-        CONSTRAINT collect_word_unique UNIQUE (word_id, collection_id, user_id), 
-        FOREIGN KEY(collection_id, user_id) REFERENCES collections (id, user_id)
-);
-"""
-
-
 class PunchDay(Base):
     __tablename__ = "punch_days"
     __table_args__ = (PrimaryKeyConstraint("user_id", "date"),)
@@ -91,6 +79,16 @@ class PunchDay(Base):
     study_minute = Column(Integer, nullable=False, default=0)
     study_word_ids = Column(Text, nullable=False, default="")
     punch_time = Column(Integer, default=int(datetime.now().timestamp()))
+
+
+class ReportIssue(Base):
+    __tablename__ = "report_issues"
+    __table_args__ = (PrimaryKeyConstraint("word_id", "user_id"),)
+    word_id = Column(Integer)
+    user_id = Column(Text)
+    word = Column(Text, nullable=False, index=True)
+    issue = Column(Text)
+    time = Column(DateTime, default=datetime.now())
 
 
 def parse_condition(
@@ -146,6 +144,7 @@ def create_punch(session: Session):
 
 if __name__ == "__main__":
     import sqlalchemy as sql
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
     import os, sys, json
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -157,6 +156,7 @@ if __name__ == "__main__":
     # DB_URL = "sqlite:///test.db"
     remote_engine = sql.create_engine(DB_URL)
     # Base.metadata.drop_all(remote_engine)
+    # ReportIssue.__table__.create(remote_engine)
     # Base.metadata.create_all(remote_engine)
     # Acquaintance.__table__.drop(remote_engine)
     # # Collection.__table__.drop(remote_engine)
@@ -171,11 +171,22 @@ if __name__ == "__main__":
     #     # insert collect_word need after collections builded and existed
     #     create_collect_word(session)
     #     session.commit()
-    with remote_engine.connect() as cursor:
-        delete = sql.delete(Collection).where(
-            (Collection.id == 1) & (Collection.user_id == "123")
-        )
-        cursor.execute(delete)
-        cursor.commit()
+    data = {"word_id": 1, "user_id": "123", "word": "shit", "issue": "fuck you"}
+    stmt = pg_insert(ReportIssue).values(data)
+    stmt = stmt.on_conflict_do_update(
+        index_elements=["word_id", "user_id"],
+        set_={
+            "issue": stmt.excluded.issue,
+            "time": stmt.excluded.time,
+        },
+    )
+    with Session(remote_engine) as session:
+        session.execute(stmt)
+        session.commit()
 
     # cursor.commit()
+
+"""
+INSERT INTO report_issues (word_id, user_id, word, issue, time)
+VALUE (?,?,?,?,?) ON CONFLICT DO UPDATE SET issue=excluded.issue time=excluded.time
+"""

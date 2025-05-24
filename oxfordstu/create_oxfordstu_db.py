@@ -262,7 +262,7 @@ if __name__ == "__main__":
         cursor.commit()
         modified_null_alphabet(cursor)
         cursor.commit()
-    asyncio.run(update_translate(DB_URL))
+    asyncio.run(update_translate(DB_URL, batch_size=50))
     toc = datetime.now()
     log.info(f"{toc.replace(microsecond=0)} finished progress ...")
     elapsed = toc.timestamp() - tic.timestamp()

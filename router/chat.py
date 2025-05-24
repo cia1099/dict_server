@@ -24,19 +24,21 @@ from fastapi import (
     HTTPException,
 )
 from aiohttp import ClientSession, FormData
+
 from pydub import AudioSegment
+
 from config import config
 from models.chat import ChatIn
 from models.role import Role
 from services.character import Character
-from services.auth import civvy_auth
+from services.auth import member_auth
 
 router = APIRouter()
 
 
 @router.post("/chat/speech")
 # async def azure_speech(req: Request, speech: bytes = Body(...)):
-async def azure_speech(speech: UploadFile = File(...), _=Depends(civvy_auth)):
+async def azure_speech(speech: UploadFile = File(...), _=Depends(member_auth)):
     audio_type = speech.content_type  # req.headers.get("Content-Type")
     if audio_type == "audio/mp3":
         speech = convert2wav(speech.file, format="mp3")
@@ -72,7 +74,7 @@ async def azure_speech(speech: UploadFile = File(...), _=Depends(civvy_auth)):
 
 @router.post("/chat/{vocabulary}")
 async def azure_chat(
-    chat: ChatIn, vocabulary: str, character: Character = Depends(civvy_auth)
+    chat: ChatIn, vocabulary: str, character: Character = Depends(member_auth)
 ):
     host = "https://imagener.openai.azure.com"
     endpoint = "/openai/deployments/gpt-35-turbo/chat/completions?api-version=2024-08-01-preview"
