@@ -69,7 +69,16 @@ async def pronunciation_word(
     res = await azure_speech(
         speech, header={"Pronunciation-Assessment": str(pron_base64, "utf-8")}
     )
-    return {"status": 200, "content": json.dumps(res)}
+    syllables: list[dict] = res["NBest"][0]["Words"][0]["Syllables"]
+    syllables = [
+        {
+            "grapheme": s.get("Grapheme") or s["Syllable"],
+            "score": s["AccuracyScore"] * 1e-2,
+        }
+        for s in syllables
+    ]
+
+    return {"status": 200, "content": json.dumps(syllables)}
 
 
 # async def azure_speech(req: Request, speech: bytes = Body(...)):
@@ -84,8 +93,8 @@ async def azure_speech(speech: UploadFile, header: dict = {}):
             "Ocp-Apim-Subscription-Key": config.SPEECH_KEY,
             "Content-Type": "audio/wav",
             "Accept": "application/json",
-            "Connection": "Keep-Alive",
             "Expect": "100-continue",
+            # "Connection": "Keep-Alive",
         }
     )
     # explicit set {"Transfer-Encoding": "chunked"} into aiohttp
