@@ -67,4 +67,5 @@ async def azure_audio(tts: Text2SpeechIn, _=Depends(member_auth)):
         fp = BytesIO()
         async for bytes in res.content.iter_chunked(1024):
             fp.write(bytes)
+        res.close()
     return StreamingResponse(read_ram_chunk(fp), media_type=f"audio/mp3")

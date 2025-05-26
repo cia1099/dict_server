@@ -7,11 +7,11 @@ if __name__ == "__main__":
 
 import asyncio
 from io import BytesIO
-import json
+import json, base64
 import math
 from pathlib import Path
 from datetime import datetime
-from typing import IO
+from typing import BinaryIO
 from aiofiles import open as aopen
 from fastapi import (
     APIRouter,
@@ -23,7 +23,7 @@ from fastapi import (
     Response,
     HTTPException,
 )
-from aiohttp import ClientSession, FormData
+from aiohttp import ClientSession, FormData, AsyncIterablePayload
 
 from pydub import AudioSegment
 
@@ -31,36 +31,17 @@ from config import config
 from models.chat import ChatIn
 from models.role import Role
 from services.character import Character
+from services.utils import read_ram_chunk, async_wrapper
 from services.auth import member_auth
 
 router = APIRouter()
 
 
 @router.post("/chat/speech")
-# async def azure_speech(req: Request, speech: bytes = Body(...)):
-async def azure_speech(speech: UploadFile = File(...), _=Depends(member_auth)):
-    audio_type = speech.content_type  # req.headers.get("Content-Type")
-    if audio_type == "audio/mp3":
-        speech = convert2wav(speech.file, format="mp3")
-    elif audio_type != "audio/wav":
-        return {"status": 400, "content": f"Unsupported speech file type:{audio_type}"}
-    header = {
-        "Ocp-Apim-Subscription-Key": config.SPEECH_KEY,
-        "Content-Type": "audio/wav",
-    }
-    async with ClientSession(
-        f"https://{config.SPEECH_REGION}.stt.speech.microsoft.com"
-    ) as session:
-        res = await session.post(
-            "/speech/recognition/conversation/cognitiveservices/v1?language=en-US&format=simple",
-            data=await speech.read(),
-            headers=header,
-        )
-        res.raise_for_status()
-        jobj: dict = await res.json()
-        # print(jobj)
-    text = jobj.get("DisplayText", "")
-    recognize = jobj["RecognitionStatus"] == "Success" and len(text) > 0
+async def speech_recognize(speech: UploadFile = File(...), _=Depends(member_auth)):
+    res = await azure_speech(speech)
+    text = res.get("DisplayText", "")
+    recognize = res["RecognitionStatus"] == "Success" and len(text) > 0
     return {
         "status": 200,
         "content": json.dumps(
@@ -70,6 +51,61 @@ async def azure_speech(speech: UploadFile = File(...), _=Depends(member_auth)):
             }
         ),
     }
+
+
+@router.post("/pronunciation")
+async def pronunciation_word(
+    word: str, req: Request, speech: UploadFile = File(...)  # , _=Depends(member_auth)
+):
+    pron_assessment = {
+        "ReferenceText": word,
+        "GradingSystem": "HundredMark",
+        "Granularity": "Phoneme",
+        "Dimension": "Comprehensive",
+        # "EnableMiscue": True,
+        # "EnableProsodyAssessment": True,
+    }
+    pron_base64 = base64.b64encode(bytes(json.dumps(pron_assessment), "utf-8"))
+    res = await azure_speech(
+        speech, header={"Pronunciation-Assessment": str(pron_base64, "utf-8")}
+    )
+    return {"status": 200, "content": json.dumps(res)}
+
+
+# async def azure_speech(req: Request, speech: bytes = Body(...)):
+async def azure_speech(speech: UploadFile, header: dict = {}):
+    audio_type = speech.content_type  # req.headers.get("Content-Type")
+    if audio_type == "audio/mp3":
+        speech = convert2wav(speech.file, format="mp3")
+    elif audio_type != "audio/wav":
+        return {"status": 400, "content": f"Unsupported speech file type:{audio_type}"}
+    header.update(
+        {
+            "Ocp-Apim-Subscription-Key": config.SPEECH_KEY,
+            "Content-Type": "audio/wav",
+            "Accept": "application/json",
+            "Connection": "Keep-Alive",
+            "Expect": "100-continue",
+        }
+    )
+    # explicit set {"Transfer-Encoding": "chunked"} into aiohttp
+    payload = AsyncIterablePayload(
+        async_wrapper(read_ram_chunk(speech.file, chunk_size=1024)),
+        content_type=header.get("Content-Type"),
+    )
+    async with ClientSession(
+        f"https://{config.SPEECH_REGION}.stt.speech.microsoft.com"
+    ) as session:
+        res = await session.post(
+            "/speech/recognition/conversation/cognitiveservices/v1?language=en-US&format=simple",
+            data=payload,
+            headers=header,
+        )
+    res.raise_for_status()
+    jobj: dict = await res.json()
+    res.close()
+    # print(jobj)
+    return jobj
 
 
 @router.post("/chat/{vocabulary}")
@@ -107,13 +143,14 @@ async def azure_chat(
     character.raise_withdraw()
 
     async with ClientSession(host) as session:
-        res = await session.post(endpoint, json=body, headers=headers)
-        jobj: dict = await res.json()
+        async with session.post(endpoint, json=body, headers=headers) as res:
+            res.raise_for_status()
+            jobj: dict = await res.json()
         # print(jobj)
-        talk = jobj["choices"][0]["message"]["content"]
-        created = jobj["created"]
-        total_tokens = jobj["usage"]["total_tokens"]
-        # print("OpenAI said:\x1b[32m%s\x1b[0m" % talk)
+    talk = jobj["choices"][0]["message"]["content"]
+    created = jobj["created"]
+    total_tokens = jobj["usage"]["total_tokens"]
+    # print("OpenAI said:\x1b[32m%s\x1b[0m" % talk)
     micro_now = datetime.now().microsecond
     created = created * 1000 + micro_now // 1000
     # cost token
@@ -130,7 +167,7 @@ async def azure_chat(
     return ans
 
 
-def convert2wav(file: IO[bytes], format: str):
+def convert2wav(file: BinaryIO, format: str):
     convert: AudioSegment = AudioSegment.from_file(file, format=format)
     fp = BytesIO()
     convert.export(fp, format="wav")
@@ -151,13 +188,14 @@ async def test_upload(file_name: str):
         content_type=f"audio/{p.suffix[1:]}",  # 指定文件类型
     )
     async with ClientSession("http://127.0.0.1:8000") as session:
-        res = await session.post(
+        async with session.post(
             "/chat/speech",
             # headers={"Content-Type": "multipart/form-data"},
             # data=await f.read(),
             data=form,
-        )
-        jobj = await res.json()
+        ) as res:
+            res.raise_for_status()
+            jobj = await res.json()
         print(jobj)
 
 

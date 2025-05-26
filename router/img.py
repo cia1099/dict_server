@@ -52,16 +52,18 @@ async def imagener(prompt: str):
         "style": "natural",
     }
     async with ClientSession(host) as session:
-        res = await session.post(endpoint, json=body, headers=headers)
-        jobj: dict = await res.json()
-        url: str = jobj["data"][0]["url"]
-        revised_prompt: str = jobj["data"][0]["revised_prompt"]
+        async with session.post(endpoint, json=body, headers=headers) as res:
+            res.raise_for_status()
+            jobj: dict = await res.json()
+    url: str = jobj["data"][0]["url"]
+    revised_prompt: str = jobj["data"][0]["revised_prompt"]
 
     async with ClientSession() as client:
-        res = await client.get(url)
-        fp = BytesIO()
-        async for bytes in res.content.iter_chunked(1024 * 512):
-            fp.write(bytes)
+        async with client.get(url) as res:
+            res.raise_for_status()
+            fp = BytesIO()
+            async for bytes in res.content.iter_chunked(1024 * 512):
+                fp.write(bytes)
     # TODO if you need revised prompt
     # return {
     #     "status": 200,

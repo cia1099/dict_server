@@ -1,6 +1,9 @@
 from typing import Annotated
 from multiprocessing import Process
 from fastapi import FastAPI, HTTPException, Response, status, Request, Depends
+from fastapi.responses import PlainTextResponse
+from fastapi.exception_handlers import http_exception_handler
+from aiohttp import ClientResponseError
 from router.dict import router as dict_router
 from router.img import router as img_router
 from router.audio import router as audio_router
@@ -36,6 +39,12 @@ app.include_router(user_router)
 app.include_router(translate_router)
 app.include_router(pay_router)
 app.include_router(db_router)
+
+
+@app.exception_handler(ClientResponseError)
+async def client_exception_handler(_, exc: ClientResponseError):
+    # TODO: log error
+    return PlainTextResponse(exc.message, exc.status)
 
 
 @app.get("/")

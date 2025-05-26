@@ -51,8 +51,11 @@ async def azure_translate(
     }
     body = [{"Text": text} for text in texts]
     async with ClientSession(host) as session:
-        res = await session.post(endpoint, json=body, headers=headers, params=params)
-        obj = await res.json()
+        async with session.post(
+            endpoint, json=body, headers=headers, params=params
+        ) as res:
+            res.raise_for_status()
+            obj = await res.json()
     if isinstance(obj, dict):
         err = obj.get("error", {"code": 555, "message": "Azure failed"})
         raise HTTPException(err["code"], err["message"])

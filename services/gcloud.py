@@ -38,8 +38,9 @@ async def vertex_imagen(prompt: str) -> BytesIO:
     headers.update({"Authorization": f"Bearer {credentials.token}"})
 
     async with ClientSession(host) as session:
-        res = await session.post(endpoint, json=body, headers=headers)
-        jobj: dict = await res.json()
+        async with session.post(endpoint, json=body, headers=headers) as res:
+            res.raise_for_status()
+            jobj: dict = await res.json()
     pred = jobj.get("predictions")
     if pred:
         bytes = base64.b64decode(pred[0]["bytesBase64Encoded"])
@@ -89,8 +90,9 @@ async def create_punch_cards(filename: str):
     headers.update({"Authorization": f"Bearer {credentials.token}"})
 
     async with ClientSession(host) as session:
-        res = await session.post(endpoint, json=body, headers=headers)
-        jobj: dict = await res.json()
+        async with session.post(endpoint, json=body, headers=headers) as res:
+            res.raise_for_status()
+            jobj: dict = await res.json()
     preds = jobj.get("predictions")
     if preds:
         gen_byte = (base64.b64decode(pred["bytesBase64Encoded"]) for pred in preds)
