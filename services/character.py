@@ -37,7 +37,7 @@ class Character(CharacterBase):
         token = claims.get("token", 0.0) + other
         claims.update({"token": max(math.floor(token * 1e3) / 1e3, 0.0)})
         auth.set_custom_user_claims(self.uid, claims)
-        return token
+        return claims.get("token", 0.0)  # + claims.get("gas", 0.0)
 
     def __sub__(self, other: float) -> float:
         # if not isinstance(other, float):

@@ -1,9 +1,10 @@
+from datetime import datetime
 import json
 from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
 from models.pull import PullIn
 from models.report import ReportIn
 from services.auth import Character
-from client.client_shcema import Acquaintance, ReportIssue, parse_condition
+from client.client_shcema import ReportIssue, SharedApp, parse_condition
 from database import remote_engine, metadata
 import sqlalchemy as sql
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -68,6 +69,42 @@ async def report_issue(report: ReportIn, character: Character = Depends(member_a
         "status": 200,
         "content": "We've received your report. We'll resolve this ASAP.",
     }
+
+
+@router.put("/share/to/app")
+async def share2app(req: Request, character: Character = Depends(member_auth)):
+    body = await req.body()
+    app_id = str(body, "utf-8")
+    now = datetime.now()
+    date = datetime(year=now.year, month=now.month, day=now.day)
+    data = {"date": int(date.timestamp()), "user_id": character.uid, "app_id": app_id}
+    stmt = pg_insert(SharedApp).values(data)
+    ins_cte = stmt.on_conflict_do_nothing().returning(1).cte("ins")
+    stmt = sql.select(
+        sql.exists(sql.select("*").select_from(ins_cte)).label("inserted")
+    )
+    async with remote_engine.connect() as cursor:
+        shared = (await cursor.execute(stmt)).scalar() or False
+        if shared:
+            await cursor.commit()
+            _ = character + 6.0
+    return {
+        "status": 200 if shared else 55123,
+        "content": "Successfully shared" if shared else "Already shared",
+    }
+
+
+@router.get("/today/shares")
+async def today_shared(character: Character = Depends(member_auth)):
+    now = datetime.now()
+    date = datetime(year=now.year, month=now.month, day=now.day)
+    today = int(date.timestamp())
+    stmt = sql.select(sql.func.count(SharedApp.app_id)).where(
+        (SharedApp.date == today) & (SharedApp.user_id == character.uid)
+    )
+    async with remote_engine.connect() as cursor:
+        shares = (await cursor.execute(stmt)).scalar() or 0
+    return {"status": 200, "content": "%d" % shares}
 
 
 async def record_issue(report: ReportIn):

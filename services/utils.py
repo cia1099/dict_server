@@ -35,6 +35,7 @@ def wav_chunk(audio_source: BinaryIO, chunk_size=1024) -> Iterator[bytes]:
     audio_source.close()
 
 
+# ref. https://github.com/Azure-Samples/Cognitive-Speech-TTS/blob/master/PronunciationAssessment/Python/sample.py#L42-L91
 WaveHeader16K16BitMono = bytes(
     [
         82,

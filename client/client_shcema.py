@@ -81,6 +81,17 @@ class PunchDay(Base):
     punch_time = Column(Integer, default=int(datetime.now().timestamp()))
 
 
+class SharedApp(Base):
+    __tablename__ = "shared_apps"
+    __table_args__ = (
+        PrimaryKeyConstraint("user_id", "date", "app_id"),
+        Index("IX_shared_app", "user_id", "date"),
+    )
+    date = Column(Integer)
+    user_id = Column(Text)
+    app_id = Column(Text, nullable=False)
+
+
 class ReportIssue(Base):
     __tablename__ = "report_issues"
     __table_args__ = (PrimaryKeyConstraint("word_id", "user_id"),)
@@ -162,6 +173,7 @@ if __name__ == "__main__":
     # # Collection.__table__.drop(remote_engine)
     # CollectWord.__table__.drop(remote_engine)
     # PunchDay.__table__.drop(remote_engine)
+    # SharedApp.__table__.create(remote_engine)
 
     # with Session(remote_engine) as session:
     #     # create_acquaint(session)
@@ -171,18 +183,21 @@ if __name__ == "__main__":
     #     # insert collect_word need after collections builded and existed
     #     create_collect_word(session)
     #     session.commit()
-    data = {"word_id": 1, "user_id": "123", "word": "shit", "issue": "fuck you"}
-    stmt = pg_insert(ReportIssue).values(data)
-    stmt = stmt.on_conflict_do_update(
-        index_elements=["word_id", "user_id"],
-        set_={
-            "issue": stmt.excluded.issue,
-            "time": stmt.excluded.time,
-        },
+    now = datetime.now()
+    date = datetime(year=now.year, month=now.month, day=now.day)
+    data = {"user_id": "123", "date": int(date.timestamp()), "app_id": "fuck you"}
+    stmt = pg_insert(SharedApp).values(data)
+    ins_cte = stmt.on_conflict_do_nothing().returning(1).cte("ins")
+    stmt = sql.select(
+        sql.exists(sql.select("*").select_from(ins_cte)).label("inserted")
     )
+    print(stmt)
     with Session(remote_engine) as session:
-        session.execute(stmt)
-        session.commit()
+        has_shared = session.execute(stmt).scalar()
+        print("first time shared = %r" % has_shared)
+        has_shared = session.execute(stmt).scalar()
+        print("second time shared = %r" % has_shared)
+        # session.commit()
 
     # cursor.commit()
 
