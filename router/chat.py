@@ -25,7 +25,7 @@ from fastapi import (
 )
 from aiohttp import ClientResponseError, ClientSession, FormData, AsyncIterablePayload
 
-from pydub import AudioSegment
+# from pydub import AudioSegment
 
 from config import config
 from models.chat import ChatIn
@@ -84,9 +84,10 @@ async def pronunciation_word(
 # async def azure_speech(req: Request, speech: bytes = Body(...)):
 async def azure_speech(speech: UploadFile, header: dict = {}):
     audio_type = speech.content_type  # req.headers.get("Content-Type")
-    if audio_type == "audio/mp3":
-        speech = convert2wav(speech.file, format="mp3")
-    elif audio_type != "audio/wav":
+    # if audio_type == "audio/mp3":
+    #     speech = convert2wav(speech.file, format="mp3")
+    # elif audio_type != "audio/wav":
+    if audio_type != "audio/wav":
         return {"status": 400, "content": f"Unsupported speech file type:{audio_type}"}
     header.update(
         {
@@ -182,15 +183,15 @@ async def azure_chat(
     return ans
 
 
-def convert2wav(file: BinaryIO, format: str):
-    convert: AudioSegment = AudioSegment.from_file(file, format=format)
-    fp = BytesIO()
-    convert.export(fp, format="wav")
-    fp.seek(0)
-    # with open("convert.wav", "wb") as f:
-    #     f.write(fp.read())
-    # fp.close()
-    return UploadFile(fp)
+# def convert2wav(file: IO[bytes], format: str):
+#     convert: AudioSegment = AudioSegment.from_file(file, format=format)
+#     fp = BytesIO()
+#     convert.export(fp, format="wav")
+#     fp.seek(0)
+#     # with open("convert.wav", "wb") as f:
+#     #     f.write(fp.read())
+#     # fp.close()
+#     return UploadFile(fp)
 
 
 async def test_upload(file_name: str):
