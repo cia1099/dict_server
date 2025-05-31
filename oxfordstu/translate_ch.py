@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 import sqlalchemy as sql
 from tqdm import tqdm
 from oxfordstu_schema import Translation
-import time
+import time, re
 from typing import Iterable, Iterator, TypeVar
 
 T = TypeVar("T")
@@ -60,6 +60,7 @@ async def update_translate(url: str, batch_size: int = 10):
             try:
                 translate_maps = await azure_translate(texts, src="zh-Hans")
                 for i, map in enumerate(translate_maps):
+                    map.update({k: remove_duplicate(map[k], k) for k in map})
                     map["zh_TW"] = cc.convert(texts[i])
                     id = rows[i]["id"]
                     stmt = (
@@ -71,6 +72,25 @@ async def update_translate(url: str, batch_size: int = 10):
             except Exception as e:
                 log.critical("%s" % e)
         cursor.commit()
+
+
+def remove_duplicate(text: str, lang: str = ""):
+    if lang == "ar_SA":
+        patterns = [" ;"]
+    else:
+        patterns = [", " if lang != "ja_JP" else "、", "; "]
+    return _recursive_remove(text, patterns)
+
+
+def _recursive_remove(text: str, patterns: list[str]):
+    if len(patterns) == 0:
+        return text
+    pattern = patterns.pop()
+    sp = {t for t in text.split(pattern)}
+    # print("pattern(%s): %s" % (pattern, sp))
+    unique = pattern.join(_recursive_remove(s, [p for p in patterns]) for s in sp)
+    sp = {t for t in unique.split(pattern)}
+    return pattern.join(sp)
 
 
 if __name__ == "__main__":
@@ -91,6 +111,7 @@ if __name__ == "__main__":
     #     dst.commit()
 
     asyncio.run(update_translate(DST_DB, batch_size=50))
+
     # asyncio.run(
     #     azure_translate(
     #         ["record", "drink"],
@@ -99,3 +120,31 @@ if __name__ == "__main__":
     # )
     # for b in batch(3, range(10)):
     #     print(", ".join(("%d" % n for n in b)))
+
+    # see id 160
+    # ======= used to remove duplicate translation
+    # unique = recursive_remove("shit; shit, shit. shit", ["; ", ", ", ". "])
+    # unique = remove_duplicate("演技、演技", lang="ja_JP")
+    # print(unique)
+    # stmt = sql.select(
+    #     Translation.definition_id.label("id"),
+    #     Translation.ja_JP,
+    #     Translation.ko_KR,
+    #     Translation.vi_VN,
+    #     Translation.th_TH,
+    #     Translation.ar_SA,
+    # ).where(Translation.ar_SA != None)
+    # with create_engine(DST_DB).connect() as cursor:
+    #     res = cursor.execute(stmt)
+    #     for map in tqdm(res.mappings().all()):
+    #         data = {
+    #             k: remove_duplicate(map[k], k) for k in map if isinstance(map[k], str)
+    #         }
+    #         id = map["id"]
+    #         update = (
+    #             sql.update(Translation)
+    #             .where(Translation.definition_id == id)
+    #             .values(data)
+    #         )
+    #         cursor.execute(update)
+    #     cursor.commit()

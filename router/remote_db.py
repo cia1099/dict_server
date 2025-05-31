@@ -88,10 +88,10 @@ async def share2app(req: Request, character: Character = Depends(member_auth)):
         if shared:
             await cursor.commit()
             _ = character + 6.0
-    return {
-        "status": 200 if shared else 55123,
-        "content": "Successfully shared" if shared else "Already shared",
-    }
+
+    if not shared:
+        raise HTTPException(55123, "Already shared today")
+    return {"status": 200, "content": "Successfully shared"}
 
 
 @router.get("/today/shares")
