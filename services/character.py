@@ -64,12 +64,12 @@ class Character(CharacterBase):
             claims.pop("gas", None)
             claims.pop("start", None)
             claims.pop("end", None)
-            claims.update({"role": Role.CIVVY})
-            # self.role = Role.CIVVY
+            claims.update({"role": Role.MEMBER})
+            # self.role = Role.MEMBER
         return claims
 
     def register_premium(self, days: int = 30):
-        if self.role != Role.CIVVY:
+        if self.role != Role.MEMBER:
             return False
         start = datetime.datetime.now()
         end = start + datetime.timedelta(days=days)
@@ -87,4 +87,5 @@ class Character(CharacterBase):
 
 
 if __name__ == "__main__":
-    print(math.pow(10, 1 - 2))
+    r = Role.GUEST
+    print(r)

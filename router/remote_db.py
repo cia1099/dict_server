@@ -123,3 +123,17 @@ async def record_issue(report: ReportIn):
         except:
             await cursor.rollback()
             raise HTTPException(500, "Oops~ there is something wrong")
+
+
+async def clear_user(uid: str):
+    stmt = sql.text(
+        """
+DELETE FROM acquaintances WHERE user_id=:user_id; 
+DELETE FROM collections WHERE user_id=:user_id; 
+DELETE FROM punch_days WHERE user_id=:user_id; 
+DELETE FROM shared_apps WHERE user_id=:user_id;
+DELETE FROM report_issues WHERE user_id=:user_id;
+"""
+    )
+    async with remote_engine.connect() as cursor:
+        await cursor.execute(stmt, {"user_id": uid})

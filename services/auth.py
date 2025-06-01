@@ -48,7 +48,7 @@ async def register_firebase(firebase_token: str, name: str | None):
         auth.update_user(uid, display_name=name if name else "TODO Faker")
         auth.set_custom_user_claims(
             uid,
-            {"role": Role.CIVVY, "token": 10.0},
+            {"role": Role.MEMBER, "token": 10.0},
         )
         return {"status": 200, "content": "Successfully create a User"}
     except Exception as e:

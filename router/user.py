@@ -1,6 +1,6 @@
 import json
 from typing import Annotated
-from fastapi import APIRouter, Depends, Request, Response, HTTPException, Header
+from fastapi import APIRouter, Depends, Request, BackgroundTasks, HTTPException, Header
 from fastapi.responses import HTMLResponse, RedirectResponse
 from aiofiles import open as aopen
 from pathlib import Path
@@ -41,7 +41,16 @@ async def firebase_register(
 
 
 @router.delete("/firebase/delete")
-async def firebase_delete(uid: str = Header(None), _=Depends(guest_auth)):
+async def firebase_delete(
+    bg_task: BackgroundTasks,
+    uid: str = Header(None),
+    c: Character = Depends(guest_auth),
+):
+    from remote_db import clear_user
+    from services.auth import ApiAuth
+
+    if ApiAuth.role_index_map.get(c.role, 0) > 0:
+        bg_task.add_task(clear_user, uid)
     auth.delete_user(uid)
 
 
