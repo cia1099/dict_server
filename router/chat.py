@@ -121,8 +121,8 @@ async def azure_speech(speech: UploadFile, header: dict = {}):
 async def azure_chat(
     chat: ChatIn, vocabulary: str, character: Character = Depends(member_auth)
 ):
-    host = "https://imagener.openai.azure.com"
-    endpoint = "/openai/deployments/gpt-35-turbo/chat/completions?api-version=2024-08-01-preview"
+    host = "https://gpt-tutor.openai.azure.com"
+    endpoint = "/openai/deployments/gpt-4.1-nano/chat/completions?api-version=2025-01-01-preview"
     headers = {
         "Content-Type": "application/json",
         "api-key": config.AZURE_OPENAI_API_KEY,
