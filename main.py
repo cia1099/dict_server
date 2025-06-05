@@ -1,8 +1,9 @@
-from typing import Annotated
+from pathlib import Path
 from multiprocessing import Process
-from fastapi import FastAPI, HTTPException, Response, status, Request, Depends
-from fastapi.responses import PlainTextResponse
+from fastapi import FastAPI, HTTPException, Response, status, Request
+from fastapi.responses import PlainTextResponse, HTMLResponse
 from fastapi.exception_handlers import http_exception_handler
+from aiofiles import open as aopen
 from aiohttp import ClientResponseError
 from router.dict import router as dict_router
 from router.img import router as img_router
@@ -49,5 +50,9 @@ async def client_exception_handler(_, exc: ClientResponseError):
 
 @app.get("/")
 async def hello_word(name: str | None = None):
+    p = Path("templates/index.html")
+    async with aopen(str(p)) as f:
+        html = await f.read()
+    return HTMLResponse(html)
     # return Response("error occur", status_code=404, media_type="text/plain")
     return f"Hello Dictionary {name}"
