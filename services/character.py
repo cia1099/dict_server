@@ -68,22 +68,27 @@ class Character(CharacterBase):
             # self.role = Role.MEMBER
         return claims
 
-    def register_premium(self, days: int = 30):
-        if self.role != Role.MEMBER:
-            return False
-        start = datetime.datetime.now()
-        end = start + datetime.timedelta(days=days)
+    # def register_premium(self, days: int = 30):
+    #     if self.role != Role.MEMBER:
+    #         return False
+    #     start = datetime.datetime.now()
+    #     end = start + datetime.timedelta(days=days)
+    #     claims = auth.get_user(self.uid).custom_claims or {}
+    #     claims.update(
+    #         {
+    #             "role": Role.PREMIUM,
+    #             "gas": 200.0,
+    #             "start": int(start.timestamp()),
+    #             "end": int(end.timestamp()),
+    #         }
+    #     )
+    #     auth.set_custom_user_claims(self.uid, claims)
+    #     return True
+
+    def update_claims(self, **kargs):
         claims = auth.get_user(self.uid).custom_claims or {}
-        claims.update(
-            {
-                "role": Role.PREMIUM,
-                "gas": 200.0,
-                "start": int(start.timestamp()),
-                "end": int(end.timestamp()),
-            }
-        )
+        claims.update(kargs)
         auth.set_custom_user_claims(self.uid, claims)
-        return True
 
 
 if __name__ == "__main__":

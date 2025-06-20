@@ -10,6 +10,7 @@ from services.character import Character
 from config import config
 
 oauth2 = OAuth2PasswordBearer("arbitrary url")
+register_member = {"role": Role.MEMBER, "token": 10.0}
 
 
 async def verify_firebase_token(firebase_token: str | None) -> dict:
@@ -18,8 +19,15 @@ async def verify_firebase_token(firebase_token: str | None) -> dict:
         # return firebase
         uid = firebase["uid"]
         email = firebase.get("email", "")
+        name = firebase.get("name")
+        if not name:
+            name = "TODO Faker" if len(email) < 1 else email.split("@")[0]
+            auth.update_user(uid, display_name=name)
+
         role = firebase.get("role", "guest")
-        name = firebase.get("name", "TODO Faker")
+        if role == Role.GUEST and firebase.get("emailVerified"):
+            role = register_member["role"]
+            auth.set_custom_user_claims(uid, register_member)
         auth_time = firebase.get(
             "auth_time", datetime.datetime.now(datetime.timezone.utc)
         )
@@ -46,10 +54,7 @@ async def register_firebase(firebase_token: str, name: str | None):
         firebase = auth.verify_id_token(firebase_token)
         uid = firebase["uid"]
         auth.update_user(uid, display_name=name if name else "TODO Faker")
-        auth.set_custom_user_claims(
-            uid,
-            {"role": Role.MEMBER, "token": 10.0},
-        )
+        auth.set_custom_user_claims(uid, register_member)
         return {"status": 200, "content": "Successfully create a User"}
     except Exception as e:
         raise HTTPException(
