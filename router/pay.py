@@ -41,10 +41,16 @@ async def update_attributes(req: Request, character: Character = Depends(member_
     entitle_dict = json.loads(str(body, "utf-8"))
     role = entitle_dict.get("identifier", "member").lower()
     start = entitle_dict.get("latestPurchaseDate")
+    if isinstance(start, str):
+        start = datetime.datetime.strptime(start, "%Y-%m-%dT%H:%M:%SZ")
     end = entitle_dict.get("expirationDate")
+    if isinstance(end, str):
+        end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%SZ")
     gas = entitle_dict.get("gas", 0.0)
-    character.update_claims(role=role, start=start, end=end, gas=gas)
 
+    character.update_claims(
+        role=role, start=int(start.timestamp()), end=int(end.timestamp()), gas=gas
+    )
     user: auth.UserRecord = auth.get_user(character.uid)
 
     expire = datetime.datetime.fromtimestamp(
