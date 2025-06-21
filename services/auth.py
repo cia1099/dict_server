@@ -22,10 +22,10 @@ async def verify_firebase_token(firebase_token: str | None) -> dict:
         name = firebase.get("name")
         if not name:
             name = "TODO Faker" if len(email) < 1 else email.split("@")[0]
-            auth.update_user(uid, display_name=name)
+        #     auth.update_user(uid, display_name=name)
 
         role = firebase.get("role", "guest")
-        if role == Role.GUEST and firebase.get("emailVerified"):
+        if role == Role.GUEST and len(email) > 0:
             role = register_member["role"]
             auth.set_custom_user_claims(uid, register_member)
         auth_time = firebase.get(
