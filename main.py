@@ -26,9 +26,9 @@ def app_life(app: FastAPI):
     from firebase_admin import credentials, initialize_app
 
     cred = credentials.Certificate(config.FIREBASE_ADMIN)
-    p = Process(target=clear_expirations, args=(cred,))
-    p.daemon = False
-    p.start()
+    # p = Process(target=clear_expirations, args=(cred,))
+    # p.daemon = False
+    # p.start()
     initialize_app(cred)
     logging.config.dictConfig(LOGGER_SETTINGS)
 
