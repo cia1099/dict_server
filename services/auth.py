@@ -21,8 +21,7 @@ async def verify_firebase_token(firebase_token: str | None) -> dict:
         email = firebase.get("email", "")
         name = firebase.get("name")
         if not name:
-            name = "TODO Faker" if len(email) < 1 else email.split("@")[0]
-        #     auth.update_user(uid, display_name=name)
+            name = "Visitor" if len(email) < 1 else email.split("@")[0]
 
         role = firebase.get("role", "guest")
         if role == Role.GUEST and len(email) > 0:
@@ -40,7 +39,7 @@ async def verify_firebase_token(firebase_token: str | None) -> dict:
             "access_token": access_token,
             "token_type": "bearer",
             "uid": uid,
-            "name": name if name else "TODO Faker",
+            "name": name,
             "email": email,
             "role": role,
         }
@@ -53,7 +52,9 @@ async def register_firebase(firebase_token: str, name: str | None):
     try:
         firebase = auth.verify_id_token(firebase_token)
         uid = firebase["uid"]
-        auth.update_user(uid, display_name=name if name else "TODO Faker")
+        if name:
+            auth.update_user(uid, display_name=name)
+        # auth.update_user(uid, display_name=name if name else "TODO Faker")
         auth.set_custom_user_claims(uid, register_member)
         return {"status": 200, "content": "Successfully create a User"}
     except Exception as e:

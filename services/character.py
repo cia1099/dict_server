@@ -58,32 +58,16 @@ class Character(CharacterBase):
         return claims.get("token", 0.0) + claims.get("gas", 0.0)
 
     def _check_premium(self, claims: dict) -> dict:
-        end = claims.get("end", 0)
-        now = datetime.datetime.now()
-        if end - int(now.timestamp()) < 0:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        end = claims.get("end", now.strftime("%Y-%m-%dT%H:%M:%SZ"))
+        end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%SZ")
+        if (end - now).total_seconds() < 1e-3:
             claims.pop("gas", None)
             claims.pop("start", None)
             claims.pop("end", None)
             claims.update({"role": Role.MEMBER})
             # self.role = Role.MEMBER
         return claims
-
-    # def register_premium(self, days: int = 30):
-    #     if self.role != Role.MEMBER:
-    #         return False
-    #     start = datetime.datetime.now()
-    #     end = start + datetime.timedelta(days=days)
-    #     claims = auth.get_user(self.uid).custom_claims or {}
-    #     claims.update(
-    #         {
-    #             "role": Role.PREMIUM,
-    #             "gas": 200.0,
-    #             "start": int(start.timestamp()),
-    #             "end": int(end.timestamp()),
-    #         }
-    #     )
-    #     auth.set_custom_user_claims(self.uid, claims)
-    #     return True
 
     def update_claims(self, **kargs):
         claims = auth.get_user(self.uid).custom_claims or {}
