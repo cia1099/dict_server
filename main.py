@@ -5,6 +5,7 @@ from fastapi.responses import PlainTextResponse, HTMLResponse
 from fastapi.exception_handlers import http_exception_handler
 from aiofiles import open as aopen
 from aiohttp import ClientResponseError
+from firebase_admin.credentials import Certificate
 from router.dict import router as dict_router
 from router.img import router as img_router
 from router.audio import router as audio_router
@@ -22,10 +23,10 @@ def app_life(app: FastAPI):
     import firebase_admin
     from firebase_admin import credentials
 
-    cred = credentials.Certificate(config.FIREBASE_ADMIN)
-    p = Process(target=clear_expirations, args=(cred,))
-    p.daemon = False
-    p.start()
+    cred: Certificate = credentials.Certificate(config.FIREBASE_ADMIN)
+    # p = Process(target=clear_expirations, args=(cred,))
+    # p.daemon = False
+    # p.start()
     firebase_admin.initialize_app(cred)
 
     return db_life(app)
