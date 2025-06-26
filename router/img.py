@@ -258,12 +258,13 @@ def convert_asset_url(word_dict: dict, req: Request):
 
 if __name__ == "__main__":
     # prompt = "Daylight came in through a chink between the curtains."
-    prompt = "There is an apple juicy on the table."
+    # prompt = "There is an apple juicy on the table."
+    prompt = "The child is drinking a bottle of apple juicy."
     import time
 
     tic = time.perf_counter()
     asyncio.run(vertex_imagen(prompt))
-    # asyncio.run(punch_card(1))
+    # asyncio.run(create_punch_cards("20250626"))
     toc = time.perf_counter()
     # print(f"Elapsed time = {toc-tic:.4f} sec")
     # asyncio.run(imagener(prompt))

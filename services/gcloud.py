@@ -1,3 +1,4 @@
+import asyncio
 import json, base64, os
 from google.oauth2.service_account import Credentials
 from google.auth.transport.requests import Request
@@ -27,6 +28,7 @@ async def vertex_imagen(prompt: str) -> BytesIO:
         "parameters": {
             "sampleCount": 1,
             "enhancePrompt": False,
+            "personGeneration": "allow_all",
             "safetySetting": "block_few",
         },
     }
@@ -74,15 +76,18 @@ async def create_punch_cards(filename: str):
     prompt = "Generate cute animals to encourage people to finish daily task\
             of memorizing vocabulary.\nThe slogan could be:\n\
             AI Vocabulary Punch Card\nMemorize words\nI'm memorizing words with AI Vocabulary, punch with me!"
-    body = {
-        "instances": [{"prompt": prompt}],
-        "parameters": {
-            "sampleCount": 7,
-            "aspectRatio": "3:4",
-            "personGeneration": "dont_allow",
-            "enhancePrompt": False,
-        },
-    }
+    bodies = (
+        {
+            "instances": [{"prompt": prompt}],
+            "parameters": {
+                "sampleCount": n,  # max 4 per once
+                "aspectRatio": "3:4",
+                "personGeneration": "dont_allow",
+                "enhancePrompt": False,
+            },
+        }
+        for n in range(4, 2, -1)
+    )
 
     credentials = Credentials.from_service_account_file(
         config.GCLOUD_SERVICE_FILE,
@@ -91,20 +96,27 @@ async def create_punch_cards(filename: str):
     credentials.refresh(Request())
     headers.update({"Authorization": f"Bearer {credentials.token}"})
 
-    async with ClientSession(host) as session:
-        async with session.post(endpoint, json=body, headers=headers) as res:
-            res.raise_for_status()
-            jobj: dict = await res.json()
-    preds = jobj.get("predictions")
-    if preds:
-        gen_byte = (base64.b64decode(pred["bytesBase64Encoded"]) for pred in preds)
-        f_ptrs = (BytesIO(byte) for byte in gen_byte)
-        for i, fp in enumerate(f_ptrs):
-            async with open(f"punch_card/{filename}_{i:02}.png", "wb") as f:
-                await f.write(fp.getvalue())
-    else:
-        error = jobj["error"]
-        raise HTTPException(error["code"], error["message"])
+    async def request(host: str, endpoint: str, body: dict, headers: dict):
+        async with ClientSession(host) as session:
+            async with session.post(endpoint, json=body, headers=headers) as res:
+                res.raise_for_status()
+                jobj: dict = await res.json()
+        return jobj
+
+    responses = await asyncio.gather(
+        *(request(host, endpoint, body, headers) for body in bodies)
+    )
+    for j, jobj in enumerate(responses):
+        preds = jobj.get("predictions")
+        if preds:
+            gen_byte = (base64.b64decode(pred["bytesBase64Encoded"]) for pred in preds)
+            f_ptrs = (BytesIO(byte) for byte in gen_byte)
+            for i, fp in enumerate(f_ptrs):
+                async with open(f"punch_card/{filename}_{i+j*4:02}.png", "wb") as f:
+                    await f.write(fp.getvalue())
+        else:
+            error = jobj["error"]
+            raise HTTPException(error["code"], error["message"])
     remove_past3month_cards()
 
 
