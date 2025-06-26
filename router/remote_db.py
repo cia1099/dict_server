@@ -11,6 +11,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from services.auth import premium_auth, member_auth
 
 router = APIRouter()
+earned_token = 2.0
 
 
 @router.post("/supabase/write")
@@ -87,7 +88,9 @@ async def share2app(req: Request, character: Character = Depends(member_auth)):
         shared = (await cursor.execute(stmt)).scalar() or False
         if shared:
             await cursor.commit()
-            _ = character + 6.0
+            count_stmt = sql_exp_count_appid(character.uid)
+            shares = (await cursor.execute(count_stmt)).scalar() or 0
+            _ = character + earned_token / (1 + shares)
 
     if not shared:
         raise HTTPException(55123, "Already shared today")
@@ -96,15 +99,15 @@ async def share2app(req: Request, character: Character = Depends(member_auth)):
 
 @router.get("/today/shares")
 async def today_shared(character: Character = Depends(member_auth)):
-    now = datetime.now()
-    date = datetime(year=now.year, month=now.month, day=now.day)
-    today = int(date.timestamp())
-    stmt = sql.select(sql.func.count(SharedApp.app_id)).where(
-        (SharedApp.date == today) & (SharedApp.user_id == character.uid)
-    )
+    stmt = sql_exp_count_appid(character.uid)
     async with remote_engine.connect() as cursor:
         shares = (await cursor.execute(stmt)).scalar() or 0
-    return {"status": 200, "content": "%d" % shares}
+    msg = (
+        f"Get {earned_token:.1f} tokens for sharing"
+        if shares == 0
+        else "Share to other app for more tokens"
+    )
+    return {"status": 200, "content": msg}
 
 
 async def record_issue(report: ReportIn):
@@ -137,3 +140,13 @@ DELETE FROM report_issues WHERE user_id=:user_id;
     )
     async with remote_engine.connect() as cursor:
         await cursor.execute(stmt, {"user_id": uid})
+
+
+def sql_exp_count_appid(uid: str):
+    now = datetime.now()
+    date = datetime(year=now.year, month=now.month, day=now.day)
+    today = int(date.timestamp())
+    stmt = sql.select(sql.func.count(SharedApp.app_id)).where(
+        (SharedApp.date == today) & (SharedApp.user_id == uid)
+    )
+    return stmt

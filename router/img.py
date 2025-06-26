@@ -150,7 +150,8 @@ async def qr_code():
 @router.get("/imagen/punch/card/{index}")
 async def punch_card(index: int):
     now = datetime.datetime.now()
-    filename = f"{now.year}{now.month:02}{now.day:02}"
+    monday = now - datetime.timedelta(days=now.weekday())
+    filename = f"{monday.year}{monday.month:02}{monday.day:02}"
     file = Path(f"punch_card/{filename}_{index:02}.png")
     waiting_times = 5
     while not file.exists() and waiting_times > 0:
@@ -261,7 +262,7 @@ if __name__ == "__main__":
     import time
 
     tic = time.perf_counter()
-    # asyncio.run(vertex_imagen(prompt))
+    asyncio.run(vertex_imagen(prompt))
     # asyncio.run(punch_card(1))
     toc = time.perf_counter()
     # print(f"Elapsed time = {toc-tic:.4f} sec")

@@ -18,6 +18,7 @@ from sqlalchemy import (
     CheckConstraint,
     # ARRAY, #only support postgresql
     create_engine,
+    delete,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Session
@@ -151,6 +152,14 @@ def create_punch(session: Session):
     t2 = PunchDay(date=int(now.timestamp()), user_id="321")
     session.add_all([t1, t2, t3])
     # session.add_all([t1])
+
+
+def clear_shared_apps():
+    before = datetime.now() - timedelta(days=7)
+    date = datetime(year=before.year, month=before.month, day=before.day)
+    timestamp = int(date.timestamp())
+    stmt = delete(SharedApp).where(SharedApp.date < timestamp)
+    return stmt
 
 
 if __name__ == "__main__":

@@ -15,9 +15,9 @@ from config import config
 
 
 async def vertex_imagen(prompt: str) -> BytesIO:
-    locate = "us-central1"
+    locate = "asia-east1"  # "us-central1"
     host = f"https://{locate}-aiplatform.googleapis.com"
-    model = "imagegeneration@002"
+    model = "imagen-3.0-fast-generate-001"  # "imagegeneration@002"outdate 9/24/2025
     endpoint = f"/v1/projects/china-wall-over/locations/{locate}/publishers/google/models/{model}:predict"
     headers = {
         "Content-Type": "application/json; charset=utf-8",
@@ -26,6 +26,8 @@ async def vertex_imagen(prompt: str) -> BytesIO:
         "instances": [{"prompt": prompt}],
         "parameters": {
             "sampleCount": 1,
+            "enhancePrompt": False,
+            "safetySetting": "block_few",
         },
     }
 
@@ -62,7 +64,7 @@ async def vertex_imagen(prompt: str) -> BytesIO:
 
 
 async def create_punch_cards(filename: str):
-    locate = "us-central1"
+    locate = "asia-east1"  # "us-central1"
     host = f"https://{locate}-aiplatform.googleapis.com"
     model = "imagen-3.0-generate-002"
     endpoint = f"/v1/projects/china-wall-over/locations/{locate}/publishers/google/models/{model}:predict"
@@ -75,7 +77,7 @@ async def create_punch_cards(filename: str):
     body = {
         "instances": [{"prompt": prompt}],
         "parameters": {
-            "sampleCount": 4,
+            "sampleCount": 7,
             "aspectRatio": "3:4",
             "personGeneration": "dont_allow",
             "enhancePrompt": False,

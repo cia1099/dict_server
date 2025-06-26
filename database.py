@@ -4,12 +4,14 @@ from sqlalchemy.pool import NullPool
 from sqlalchemy import MetaData
 from fastapi import FastAPI
 from config import config
+from client.client_shcema import clear_shared_apps
 
 
 @asynccontextmanager
 async def db_life(app: FastAPI):
     async with remote_engine.begin() as conn:
         await conn.run_sync(metadata.reflect)
+        await conn.execute(clear_shared_apps())
     yield
     await engine.dispose()
     await remote_engine.dispose()

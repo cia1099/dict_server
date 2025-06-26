@@ -59,8 +59,8 @@ class Character(CharacterBase):
 
     def _check_premium(self, claims: dict) -> dict:
         now = datetime.datetime.now(datetime.timezone.utc)
-        end = claims.get("end", now.strftime("%Y-%m-%dT%H:%M:%SZ"))
-        end = datetime.datetime.strptime(end, "%Y-%m-%dT%H:%M:%SZ")
+        end_utc: str = claims.get("end", now.strftime("%Y-%m-%dT%H:%M:%SZ"))
+        end = datetime.datetime.strptime(end_utc, "%Y-%m-%dT%H:%M:%SZ")
         if (end - now).total_seconds() < 1e-3:
             claims.pop("gas", None)
             claims.pop("start", None)
