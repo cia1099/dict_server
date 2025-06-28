@@ -1,6 +1,8 @@
+import asyncio
 from datetime import datetime
 from typing import cast, Iterable
 from firebase_admin import credentials, auth, initialize_app, _apps
+from router.remote_db import clear_user
 
 EXTRA_GAS = 200.0
 
@@ -20,6 +22,13 @@ def clear_expirations(cred: credentials.Certificate):
                     ghosts.append(user)
             else:
                 claims = user.custom_claims or {}
+                disabled_at = claims.get("disabled_at")
+                if disabled_at:
+                    time = datetime.strptime(disabled_at, "%Y-%m-%dT%H:%M:%SZ")
+                    expire = now - int(time.timestamp())
+                    if expire > 1440 * 60 * 7:
+                        asyncio.run(clear_user(user.uid or ""))
+                        ghosts.append(user)
                 if claims.get("role") == "premium":
                     claims.update({"gas": EXTRA_GAS})
                     auth.set_custom_user_claims(user.uid, claims)
