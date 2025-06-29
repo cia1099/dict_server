@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 import json
 from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
@@ -129,17 +130,21 @@ async def record_issue(report: ReportIn):
 
 
 async def clear_user(uid: str):
-    stmt = sql.text(
-        """
-DELETE FROM acquaintances WHERE user_id=:user_id; 
-DELETE FROM collections WHERE user_id=:user_id; 
-DELETE FROM punch_days WHERE user_id=:user_id; 
-DELETE FROM shared_apps WHERE user_id=:user_id;
-DELETE FROM report_issues WHERE user_id=:user_id;
-"""
+    tables = [
+        "acquaintances",
+        "collections",
+        "punch_days",
+        "shared_apps",
+        "report_issues",
+    ]
+    stmts = (
+        sql.text(f"DELETE FROM {table} WHERE user_id=:user_id") for table in tables
     )
     async with remote_engine.connect() as cursor:
-        await cursor.execute(stmt, {"user_id": uid})
+        async with cursor.begin():
+            for stmt in stmts:
+                await cursor.execute(stmt, {"user_id": uid})
+    return uid
 
 
 def sql_exp_count_appid(uid: str):
