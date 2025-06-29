@@ -136,15 +136,19 @@ async def azure_chat(
         "messages": [
             {
                 "role": "system",
-                "content": "You are an English tutor. Please keep patience to teach students understand and know English grammar",
+                "content": "You are an English tutor. Please keep patience to teach students understand and know English grammar.",
             },
             {
                 "role": "system",
-                "content": f'You need to guide students to know how to use the vocabulary "{vocabulary}". You can\'t give any example to student, you should guide them to do it themselves',
+                "content": f'You need to guide students to know how to use the vocabulary "{vocabulary}". You can\'t give any example to student, you should guide them to do it themselves.',
+            },
+            {
+                "role": "system",
+                "content": f"If possible, modify the student's incorrect sentence into a correct one.",
             },
             {
                 "role": "assistant",
-                "content": f'Hello student. We are going to learn the word "{vocabulary}". I will watch you make a sentence or paragraph using this word.',
+                "content": f'Hello student. We are going to learn the word "{vocabulary}". I will watch you construct a sentence or paragraph using this word.',
             },
             {"role": "user", "content": prompt},
         ]
