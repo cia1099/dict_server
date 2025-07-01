@@ -16,11 +16,13 @@ earned_token = 2.0
 
 
 @router.post("/supabase/write")
-async def supabase_write(req: Request, _=Depends(premium_auth)):
+async def supabase_write(req: Request, c=Depends(premium_auth)):
     body = await req.body()
     query = body.decode("utf-8")
+    policy = f"SET LOCAL request.jwt.claim.sub = '{c.uid}'"
     async with remote_engine.connect() as cursor:
         try:
+            await cursor.execute(sql.text(policy))
             await cursor.execute(sql.text(query))
             await cursor.commit()
         except:
@@ -30,11 +32,13 @@ async def supabase_write(req: Request, _=Depends(premium_auth)):
 
 
 @router.delete("/supabase/erase")
-async def supabase_delete(req: Request, _=Depends(member_auth)):
+async def supabase_delete(req: Request, c=Depends(member_auth)):
     body = await req.body()
     query = body.decode("utf-8")
+    policy = f"SET LOCAL request.jwt.claim.sub = '{c.uid}'"
     async with remote_engine.connect() as cursor:
         try:
+            await cursor.execute(sql.text(policy))
             await cursor.execute(sql.text(query))
             await cursor.commit()
         except:
@@ -43,9 +47,13 @@ async def supabase_delete(req: Request, _=Depends(member_auth)):
     return {"status": 200, "content": "Successfully erase Supabase"}
 
 
+# User can only see their own rows
+# user_id = auth.uid()::text
+
+
 @router.post("/supabase/pull")
 async def supabase_pull(
-    pull: PullIn, page: int = 0, max_length: int = 200, _=Depends(member_auth)
+    pull: PullIn, page: int = 0, max_length: int = 200, c=Depends(member_auth)
 ):
     table = metadata.tables.get(pull.tablename)
     if table is None:
@@ -58,6 +66,7 @@ async def supabase_pull(
         .offset(max_length * page)
     )
     async with remote_engine.connect() as cursor:
+        await cursor.execute(sql.text(f"SET LOCAL request.jwt.claim.sub = '{c.uid}'"))
         res = await cursor.execute(stmt)
     encode = [dict(row) for row in res.mappings().all()]
     return {"status": 200, "content": json.dumps(encode)}
@@ -86,6 +95,9 @@ async def share2app(req: Request, character: Character = Depends(member_auth)):
         sql.exists(sql.select("*").select_from(ins_cte)).label("inserted")
     )
     async with remote_engine.connect() as cursor:
+        await cursor.execute(
+            sql.text(f"SET LOCAL request.jwt.claim.sub = '{character.uid}'")
+        )
         shared = (await cursor.execute(stmt)).scalar() or False
         if shared:
             await cursor.commit()
@@ -122,6 +134,9 @@ async def record_issue(report: ReportIn):
     )
     async with remote_engine.connect() as cursor:
         try:
+            await cursor.execute(
+                sql.text(f"SET LOCAL request.jwt.claim.sub = '{report.user_id}'")
+            )
             await cursor.execute(stmt)
             await cursor.commit()
         except:

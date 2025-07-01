@@ -74,13 +74,16 @@ async def request_consume_tokens(character: Character = Depends(guest_auth)):
     }
 
 
-@router.get("/firebase/auth/action")
-async def get_reset_password_page(mode: str, oobCode: str, apiKey: str):
-    if mode == "verifyEmail":
-        return RedirectResponse(
-            f"https://ai-vocabulary-firebase.firebaseapp.com/__/auth/action?mode={mode}&oobCode={oobCode}&apiKey={apiKey}"
-        )
-    p = Path("templates/reset_password.html")
-    async with aopen(str(p)) as f:
-        html = await f.read()
-    return HTMLResponse(html)
+# @router.get("/auth/action")
+# async def get_reset_password_page(mode: str, oobCode: str, apiKey: str):
+#     if mode == "verifyEmail":
+#         return RedirectResponse(
+#             f"https://ai-vocabulary-firebase.firebaseapp.com/__/auth/action?mode={mode}&oobCode={oobCode}&apiKey={apiKey}"
+#         )
+#     # p = Path("templates/reset_password.html")
+#     # async with aopen(str(p)) as f:
+#     #     html = await f.read()
+#     # return HTMLResponse(html)
+#     return RedirectResponse(
+#         f"https://ai-vocabulary.com/auth/action?mode={mode}&oobCode={oobCode}&apiKey={apiKey}"
+#     )
