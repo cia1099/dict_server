@@ -10,7 +10,6 @@ from aiofiles import open
 from aiohttp import ClientSession
 from fastapi import HTTPException
 
-from PIL import Image
 
 from config import config
 
@@ -57,10 +56,6 @@ async def vertex_imagen(prompt: str) -> BytesIO:
         # fp = generate_error_img(jobj["error"]["message"])
         err = jobj["error"]
         raise HTTPException(jobj["code"], err["message"])
-
-    if pred and __name__ == "__main__":
-        img = Image.open(fp)
-        img.show()
 
     return fp
 

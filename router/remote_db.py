@@ -106,7 +106,7 @@ async def share2app(req: Request, character: Character = Depends(member_auth)):
             _ = character + earned_token / (1 + shares)
 
     if not shared:
-        raise HTTPException(55123, "Already shared today")
+        raise HTTPException(status.HTTP_409_CONFLICT, "Already shared today")
     return {"status": 200, "content": "Successfully shared"}
 
 

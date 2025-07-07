@@ -17,7 +17,8 @@ from config import config
 from models.role import Role
 from services.auth import ApiAuth
 from services.utils import read_ram_chunk, iter_file
-from services.gcloud import vertex_imagen, create_punch_cards
+from services.gcloud import create_punch_cards
+from services.runware import runware_imagen
 
 router = APIRouter()
 img_auth = ApiAuth(Role.MEMBER, cost_token=2)
@@ -78,58 +79,15 @@ async def imagener(prompt: str):
 
 @router.get("/imagen/{size}")
 async def imagen(prompt: str, size: int = 256, _=Depends(img_auth)):
-    fp = await vertex_imagen(prompt)
+    fp = await runware_imagen(prompt, steps=8)
     # cost_token = 2e-2 * 100
     img_size = fp.getbuffer().nbytes
     return StreamingResponse(
         read_ram_chunk(fp),
-        media_type="image/png",
+        # media_type="image/png",
+        media_type="image/jpeg",
         headers={"Content-Length": str(img_size)},
     )
-    # host = "https://imagener.openai.azure.com"
-    # endpoint = "/openai/images/generations:submit?api-version=2023-06-01-preview"
-    # headers = {
-    #     "Content-Type": "application/json",
-    #     "api-key": config.AZURE_OPENAI_API_KEY,
-    # }
-    # ssize = "x".join("%d" % (size & (1 << 8 | 1 << 9 | 1 << 10)) for _ in range(2))
-    # body = {"prompt": prompt, "size": ssize, "n": 1}
-    # async with ClientSession(host) as session:
-    #     res = await session.post(endpoint, json=body, headers=headers)
-    #     jobj: dict = await res.json()
-    #     # print(jobj)
-    #     id = jobj["id"]
-    #     img_point = endpoint.replace("generations:submit", id).replace(
-    #         "openai", "openai/operations"
-    #     )
-    #     while jobj["status"] != "succeeded" and jobj["status"] != "failed":
-    #         await asyncio.sleep(1)
-    #         res = await session.get(img_point, headers=headers)
-    #         jobj = await res.json()
-    #         # print(jobj)
-    #     if jobj["status"] == "failed":
-    #         error: dict = jobj["error"]
-    #         # content = f"({error['code']}){error['message']}"
-    #         content = "Blocked by sensitive content"
-    #         fp = generate_error_img(content, size)
-    #         return StreamingResponse(read_ram_chunk(fp), media_type=f"image/png")
-
-    #     if jobj.get("result"):
-    #         url = jobj["result"]["data"][0]["url"]
-    #     else:
-    #         url = jobj["data"][0]["url"]
-    # async with ClientSession() as client:
-    #     res = await client.get(url)
-    #     fp = BytesIO()
-    #     async for bytes in res.content.iter_chunked(1024 * 512):
-    #         fp.write(bytes)
-    # if __name__ != "__main__":
-    #     return StreamingResponse(read_ram_chunk(fp), media_type=f"image/png")
-    # else:
-    #     fp.seek(0)
-    #     img = Image.open(fp)
-    #     img.show()
-    #     fp.close()
 
 
 @router.get("/imagen/punch/card/qr_code")
@@ -261,11 +219,14 @@ if __name__ == "__main__":
     # prompt = "There is an apple juicy on the table."
     prompt = "The child is drinking a bottle of apple juicy."
     import time
+    from PIL import Image
 
     tic = time.perf_counter()
-    asyncio.run(vertex_imagen(prompt))
+    # fp = asyncio.run(vertex_imagen(prompt))
     # asyncio.run(create_punch_cards("20250626"))
     toc = time.perf_counter()
+    # img = Image.open(fp)
+    # img.show()
     # print(f"Elapsed time = {toc-tic:.4f} sec")
     # asyncio.run(imagener(prompt))
     # asyncio.run(imagen(prompt, 600))
