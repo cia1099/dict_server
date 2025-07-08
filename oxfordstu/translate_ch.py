@@ -94,6 +94,8 @@ def _recursive_remove(text: str, patterns: list[str]):
 
 
 if __name__ == "__main__":
+    import json
+
     SRC_DB = "sqlite:///dictionary/05232025_oxfordstu.db"
     DST_DB = "sqlite:///dictionary/oxfordstu.db"
     # src_engine = create_engine(SRC_DB)
@@ -112,14 +114,13 @@ if __name__ == "__main__":
 
     asyncio.run(update_translate(DST_DB, batch_size=50))
 
-    # asyncio.run(
-    #     azure_translate(
-    #         ["record", "drink"],
-    #         src="en",
-    #     )
-    # )
-    # for b in batch(3, range(10)):
-    #     print(", ".join(("%d" % n for n in b)))
+    tr = asyncio.run(
+        azure_translate(
+            ["背单词", "单词"],
+            src="zh-Hans",
+        )
+    )
+    # print(json.dumps(tr))
 
     # see id 160
     # ======= used to remove duplicate translation

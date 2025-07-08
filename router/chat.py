@@ -122,7 +122,11 @@ async def azure_chat(
     chat: ChatIn, vocabulary: str, character: Character = Depends(member_auth)
 ):
     host = "https://gpt-tutor.openai.azure.com"
-    endpoint = "/openai/deployments/gpt-4.1-nano/chat/completions?api-version=2025-01-01-preview"
+    model = "gpt-4.1-mini"
+    # model = "gpt-4.1-nano"
+    endpoint = (
+        f"/openai/deployments/{model}/chat/completions?api-version=2025-01-01-preview"
+    )
     headers = {
         "Content-Type": "application/json",
         "api-key": config.AZURE_OPENAI_API_KEY,
@@ -175,8 +179,6 @@ async def azure_chat(
         "created": created,
         "user_id": config.CHAT_BOT_UUID,
     }
-    # print(json.dumps(ans))
-    # return {"status": 200, "content": json.dumps(ans)}
     return ans
 
 
@@ -223,7 +225,8 @@ if __name__ == "__main__":
     # prompt = "Can you give me some examples of sentences with the word apple?"
     # prompt = "I am like a peace of apple"
     prompt = "She always poop apples everyday."
-    asyncio.run(azure_chat(ChatIn(text=prompt), vocabulary))
+    ans = asyncio.run(azure_chat(ChatIn(text=prompt), vocabulary))
+    print(json.dumps(ans))
 
     help = "Can you give me tips to help me to do a sentence?"
     # asyncio.run(azure_chat(ChatIn(text=help, is_help=True), vocabulary))

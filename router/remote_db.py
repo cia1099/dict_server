@@ -5,14 +5,14 @@ from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
 from models.pull import PullIn
 from models.report import ReportIn
 from services.auth import Character
-from client.client_shcema import ReportIssue, SharedApp, parse_condition
+from client.client_schema import ReportIssue, SharedApp, parse_condition
 from database import remote_engine, metadata
 import sqlalchemy as sql
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from services.auth import premium_auth, member_auth
 
 router = APIRouter()
-earned_token = 2.0
+earned_token = 6.0
 
 
 @router.post("/supabase/write")

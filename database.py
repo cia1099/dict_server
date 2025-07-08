@@ -4,7 +4,7 @@ from sqlalchemy.pool import NullPool
 from sqlalchemy import MetaData
 from fastapi import FastAPI
 from config import config
-from client.client_shcema import clear_shared_apps
+from client.client_schema import clear_shared_apps
 
 
 @asynccontextmanager
