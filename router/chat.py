@@ -33,7 +33,6 @@ from models.role import Role
 from services.character import Character
 from services.utils import read_ram_chunk, async_wrapper
 from services.auth import member_auth
-from log_config import elog
 
 router = APIRouter()
 
@@ -111,17 +110,11 @@ async def azure_speech(speech: UploadFile, header: dict = {}):
             data=payload,
             headers=header,
         )
-    try:
         res.raise_for_status()
         jobj: dict = await res.json()
-        return jobj
-    except ClientResponseError as e:
-        error = f"{e.message} {e.status}"
-        elog.error(error)
-        raise
-    finally:
         res.close()
     # print(jobj)
+    return jobj
 
 
 @router.post("/chat/{vocabulary}")
@@ -168,13 +161,7 @@ async def azure_chat(
 
     async with ClientSession(host) as session:
         async with session.post(endpoint, json=body, headers=headers) as res:
-            try:
-                res.raise_for_status()
-            except ClientResponseError as e:
-                error = f"{e.message} {e.status}"
-                elog.error(error)
-                raise
-
+            res.raise_for_status()
             jobj: dict = await res.json()
         # print(jobj)
     talk = jobj["choices"][0]["message"]["content"]

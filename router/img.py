@@ -19,7 +19,6 @@ from services.auth import ApiAuth
 from services.utils import read_ram_chunk, iter_file
 from services.gcloud import create_punch_cards
 from services.runware import runware_imagen
-from log_config import elog
 
 router = APIRouter()
 img_auth = ApiAuth(Role.MEMBER, cost_token=2)
@@ -55,24 +54,14 @@ async def imagener(prompt: str):
     }
     async with ClientSession(host) as session:
         async with session.post(endpoint, json=body, headers=headers) as res:
-            try:
-                res.raise_for_status()
-            except ClientResponseError as e:
-                error = f"{e.message} {e.status}"
-                elog.error(error)
-                raise
+            res.raise_for_status()
             jobj: dict = await res.json()
     url: str = jobj["data"][0]["url"]
     revised_prompt: str = jobj["data"][0]["revised_prompt"]
 
     async with ClientSession() as client:
         async with client.get(url) as res:
-            try:
-                res.raise_for_status()
-            except ClientResponseError as e:
-                error = f"{e.message} {e.status}"
-                elog.error(error)
-                raise
+            res.raise_for_status()
             fp = BytesIO()
             async for bytes in res.content.iter_chunked(1024 * 512):
                 fp.write(bytes)

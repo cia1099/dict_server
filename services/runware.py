@@ -14,7 +14,6 @@ from fastapi import HTTPException
 from uuid import uuid4
 
 from config import config
-from log_config import elog
 
 
 async def runware_imagen(prompt: str, steps: int = 16):
@@ -41,12 +40,7 @@ async def runware_imagen(prompt: str, steps: int = 16):
     ]
     async with ClientSession(host) as session:
         async with session.post(endpoint, json=body, headers=headers) as res:
-            try:
-                res.raise_for_status()
-            except ClientResponseError as e:
-                error: str = f"{e.message} {e.status}"
-                elog.error(error)
-                raise  # HTTPException(e.status, e.message)
+            res.raise_for_status()
             jobj: dict = await res.json()
     # print(json.dumps(jobj))
     data = jobj["data"][0]

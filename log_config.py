@@ -92,8 +92,6 @@ LOGGER_SETTINGS = {
 }
 
 
-elog = logging.getLogger("error")
-
 if __name__ == "__main__":
     logging.config.dictConfig(LOGGER_SETTINGS)
     log = logging.getLogger("debug")

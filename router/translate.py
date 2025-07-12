@@ -1,4 +1,5 @@
 import json
+import logging
 from fastapi import APIRouter, Depends, Query, Request, status, HTTPException
 import sqlalchemy as sql
 
@@ -9,7 +10,6 @@ from aiohttp import ClientResponseError, ClientSession
 from database import engine
 from services.auth import premium_auth
 from config import config
-from log_config import elog
 
 router = APIRouter()
 
@@ -55,15 +55,11 @@ async def azure_translate(
         async with session.post(
             endpoint, json=body, headers=headers, params=params
         ) as res:
-            try:
-                res.raise_for_status()
-            except ClientResponseError as e:
-                error = f"{e.message} {e.status}"
-                elog.error(error)
-                raise
+            res.raise_for_status()
             obj = await res.json()
     if isinstance(obj, dict):
         err = obj.get("error", {"code": 555, "message": "Azure failed"})
+        elog = logging.getLogger("error")
         elog.error(f"{err["message"]} {err["code"]}")
         raise HTTPException(err["code"], err["message"])
 

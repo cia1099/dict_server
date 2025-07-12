@@ -48,7 +48,9 @@ app.include_router(db_router)
 
 @app.exception_handler(ClientResponseError)
 async def client_exception_handler(_, exc: ClientResponseError):
-    # TODO: log error
+    elog = logging.getLogger("error")
+    elog.error(f"{exc.message} {exc.status}")
+    raise HTTPException(exc.status, exc.message)
     return PlainTextResponse(exc.message, exc.status)
 
 
