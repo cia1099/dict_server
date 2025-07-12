@@ -31,7 +31,7 @@ def app_life(app: FastAPI):
     # p.daemon = False
     # p.start()
     firebase_admin.initialize_app(cred)
-    logging.config.dictConfig(LOGGER_SETTINGS)
+    # logging.config.dictConfig(LOGGER_SETTINGS)
 
     return db_life(app)
 
