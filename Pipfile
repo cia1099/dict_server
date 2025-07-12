@@ -20,6 +20,7 @@ pydub = "*"
 google-auth = {extras = ["pyopenssl"], version = "*"}
 firebase-admin = "*"
 python-jose = {extras = ["cryptography"], version = "*"}
+logtail-python = "*"
 
 [dev-packages]
 black = {extras = ["d"], version = "*"}

@@ -17,6 +17,9 @@ from database import db_life
 from firebase.helper import clear_expirations
 from config import config
 
+from log_config import LOGGER_SETTINGS
+import logging, logging.config
+
 
 def app_life(app: FastAPI):
     import firebase_admin
@@ -27,6 +30,7 @@ def app_life(app: FastAPI):
     p.daemon = False
     p.start()
     firebase_admin.initialize_app(cred)
+    logging.config.dictConfig(LOGGER_SETTINGS)
 
     return db_life(app)
 
@@ -50,9 +54,4 @@ async def client_exception_handler(_, exc: ClientResponseError):
 
 @app.get("/")
 async def hello_word(name: str | None = None):
-    # p = Path("templates/index.html")
-    # async with aopen(str(p)) as f:
-    #     html = await f.read()
-    # return HTMLResponse(html)
-    # return Response("error occur", status_code=404, media_type="text/plain")
     return f"Hello Dictionary {name}"

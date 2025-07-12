@@ -4,11 +4,12 @@ import sqlalchemy as sql
 
 from models.translate import TranslateIn
 from oxfordstu.oxfordstu_schema import Translation
-from aiohttp import ClientSession
+from aiohttp import ClientResponseError, ClientSession
 
 from database import engine
 from services.auth import premium_auth
 from config import config
+from log_config import elog
 
 router = APIRouter()
 
@@ -54,10 +55,16 @@ async def azure_translate(
         async with session.post(
             endpoint, json=body, headers=headers, params=params
         ) as res:
-            res.raise_for_status()
+            try:
+                res.raise_for_status()
+            except ClientResponseError as e:
+                error = f"{e.message} {e.status}"
+                elog.error(error)
+                raise
             obj = await res.json()
     if isinstance(obj, dict):
         err = obj.get("error", {"code": 555, "message": "Azure failed"})
+        elog.error(f"{err["message"]} {err["code"]}")
         raise HTTPException(err["code"], err["message"])
 
     # print(json.dumps(obj))

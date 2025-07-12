@@ -10,7 +10,7 @@ from services.character import Character
 from config import config
 
 oauth2 = OAuth2PasswordBearer("arbitrary url")
-register_member = {"role": Role.MEMBER, "token": 100.0}
+register_member = {"role": Role.MEMBER, "token": 25.0}
 
 
 async def verify_firebase_token(firebase_token: str | None) -> dict:

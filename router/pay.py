@@ -7,6 +7,7 @@ import jwt
 from config import config
 from services.character import Character
 from services.auth import member_auth, guest_auth
+from log_config import elog
 
 router = APIRouter()
 

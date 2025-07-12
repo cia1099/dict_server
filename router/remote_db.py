@@ -12,7 +12,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from services.auth import premium_auth, member_auth
 
 router = APIRouter()
-earned_token = 6.0
+earned_token = 2.0
 
 
 @router.post("/supabase/write")

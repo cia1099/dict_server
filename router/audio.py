@@ -4,14 +4,14 @@ from typing import Iterator
 from fastapi import APIRouter, Depends, Request, Response, HTTPException
 from fastapi.responses import StreamingResponse
 from gtts import gTTS
-from aiohttp import ClientSession
+from aiohttp import ClientResponseError, ClientSession
 
 from models.role import Role
 from models.text2speech import Text2SpeechIn
 from services.auth import member_auth
 from services.utils import iter_file, read_ram_chunk
 from config import config
-
+from log_config import elog
 
 router = APIRouter()
 
@@ -63,7 +63,12 @@ async def azure_audio(tts: Text2SpeechIn, _=Depends(member_auth)):
         f"https://{config.SPEECH_REGION}.tts.speech.microsoft.com"
     ) as session:
         res = await session.post("/cognitiveservices/v1", data=content, headers=header)
-        res.raise_for_status()
+        try:
+            res.raise_for_status()
+        except ClientResponseError as e:
+            error = f"{e.message} {e.status}"
+            elog.error(error)
+            raise
         fp = BytesIO()
         async for bytes in res.content.iter_chunked(1024):
             fp.write(bytes)
