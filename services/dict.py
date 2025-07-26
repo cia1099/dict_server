@@ -10,7 +10,8 @@ if __name__ == "__main__":
 import sqlalchemy as sql
 from typing import Any
 from oxfordstu.oxfordstu_schema import *
-from oxfordstu.thesaurus import valid_speeches
+
+# from oxfordstu.thesaurus import valid_speeches
 
 DB_URL = "sqlite:///dictionary/oxfordstu.db"
 
@@ -320,6 +321,7 @@ def update_phrase(cursor: sql.engine.Connection):
     # stmt = sql.update(Phrase).where(Phrase.id.in_(subq)).values(part_of_speech="noun")
     # res = cursor.execute(stmt)
     # cursor.commit()
+    valid_speeches = ["noun", "verb", "adjective", "adverb"]
     stmt = sql.select(Phrase.id, Phrase.part_of_speech).where(
         sql.not_(Phrase.part_of_speech.in_(valid_speeches + ["idiom"]))
     )

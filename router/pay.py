@@ -48,7 +48,8 @@ async def update_attributes(req: Request, character: Character = Depends(member_
 
 
 async def subscript_status(uid: str):
-    PUBLIC_KEY = "appl_BhfSwLRtzObwxuwlHUNddWezqtr"
+    # PUBLIC_KEY = "appl_BhfSwLRtzObwxuwlHUNddWezqtr"
+    PUBLIC_KEY = "goog_AgjIXnZbhaZFktUJAWLuQcmNCaQ"
     host = "https://api.revenuecat.com/v1/"
     endpoint = f"subscribers/{uid}"
     headers = {
@@ -59,4 +60,4 @@ async def subscript_status(uid: str):
         async with session.get(endpoint, headers=headers) as res:
             res.raise_for_status()
             jobj = await res.json()
-        print(json.dumps(jobj))
+    return jobj
