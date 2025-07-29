@@ -11,12 +11,7 @@ from logging import Logger
 from oxfordstu import merriam_URL
 
 
-valid_speeches = [
-    "noun",
-    "verb",
-    "adjective",
-    "adverb",
-]
+valid_speeches = ["noun", "verb", "adjective", "adverb"]
 
 
 def speech_thesaurus(

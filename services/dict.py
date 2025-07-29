@@ -11,7 +11,6 @@ import sqlalchemy as sql
 from typing import Any
 from oxfordstu.oxfordstu_schema import *
 
-# from oxfordstu.thesaurus import valid_speeches
 
 DB_URL = "sqlite:///dictionary/oxfordstu.db"
 
