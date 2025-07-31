@@ -9,7 +9,7 @@ from models.role import Role
 from services.character import Character
 from config import config
 
-oauth2 = OAuth2PasswordBearer("arbitrary url")
+oauth2 = OAuth2PasswordBearer(tokenUrl="/check/access/token")
 register_member = {"role": Role.MEMBER, "token": 25.0}
 
 
