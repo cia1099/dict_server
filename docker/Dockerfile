@@ -3,7 +3,7 @@ FROM python:3.13-slim
 
 # 更新包管理器并安装git
 RUN apt-get update && \
-    apt-get install -y git && \
+    apt-get install -y git ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
 # 克隆指定的仓库并切换到dev分支，直接克隆到/dict_server
