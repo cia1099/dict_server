@@ -9,7 +9,7 @@ from models.role import Role
 from services.character import Character
 from config import config
 
-oauth2 = OAuth2PasswordBearer(tokenUrl="/check/access/token")
+oauth2 = OAuth2PasswordBearer(tokenUrl="/god/token")
 register_member = {"role": Role.MEMBER, "token": 25.0}
 
 
@@ -86,6 +86,18 @@ def verify_api_access(token: Annotated[str, Depends(oauth2)]):
             headers={"WWW-Authenticate": "Bearer"},
         )
     return Character.from_dict(play_load)
+
+
+async def my_token(email: str):
+    user: auth.UserRecord = auth.get_user_by_email(email)
+    expire = datetime.datetime.now() + datetime.timedelta(minutes=30)
+    play_load = {
+        "uid": user.uid,
+        "role": (user.custom_claims or {}).get("role", Role.PREMIUM),
+        "exp": expire,
+    }
+    access_token = jwt.encode(play_load, key=config.JWT_SECRETE_KEY)
+    return access_token
 
 
 class ApiAuth:

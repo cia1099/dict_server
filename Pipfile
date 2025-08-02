@@ -21,6 +21,7 @@ google-auth = {extras = ["pyopenssl"], version = "*"}
 firebase-admin = "*"
 python-jose = {extras = ["cryptography"], version = "*"}
 logtail-python = "*"
+scalar-fastapi = "*"
 
 [dev-packages]
 black = {extras = ["d"], version = "*"}

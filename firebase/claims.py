@@ -45,7 +45,8 @@ if __name__ == "__main__":
     cred = credentials.Certificate(config.FIREBASE_ADMIN)
     app = initialize_app(cred)
     uid = "kFIiU336lxQjtwSIiPyTA32boPt2"
-    user: auth.UserRecord = auth.get_user(uid)
+    # user: auth.UserRecord = auth.get_user(uid)
+    user: auth.UserRecord = auth.get_user_by_email("cia109@gmail.com")
     auth_time = datetime.fromtimestamp(user.user_metadata.last_sign_in_timestamp * 1e-3)
     print(auth_time)
     claims = user.custom_claims or {}
@@ -55,8 +56,8 @@ if __name__ == "__main__":
     #     claims = user.custom_claims or {}
     #     print("successfully register premium")
 
-    claims.update({"gas": 200.0})
-    auth.set_custom_user_claims(uid, claims)
+    # claims.update({"gas": 200.0})
+    # auth.set_custom_user_claims(uid, claims)
     print(claims)
     # print(json.dumps(user._data))
     # list_users(cred)

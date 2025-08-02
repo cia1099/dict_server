@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Request, BackgroundTasks, HTTPException,
 from fastapi.responses import HTMLResponse, RedirectResponse
 from aiofiles import open as aopen
 from pathlib import Path
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordRequestForm
 from firebase_admin import auth
 from services.character import Character
 from services.auth import (
@@ -13,6 +13,7 @@ from services.auth import (
     register_firebase,
     verify_api_access,
     get_consume_tokens,
+    my_token,
 )
 from services.auth import oauth2, guest_auth
 
@@ -72,6 +73,15 @@ async def request_consume_tokens(character: Character = Depends(guest_auth)):
             str(consume_tokens) if not isNone else "You don't available consume"
         ),
     }
+
+
+@router.post("/god/token", include_in_schema=False)
+async def login_god(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+    username = form_data.username
+    # password = form_data.password
+    # raise HTTPException(status_code=400, detail="Incorrect username or password")
+    access_token = await my_token(email=username)
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 # @router.get("/auth/action")
