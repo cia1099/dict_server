@@ -47,5 +47,4 @@ def clear_expirations(cred: credentials.Certificate):
     log.info("Successfully deleted {0} users".format(ret.success_count))
     log.info("Failed to delete {0} users".format(ret.failure_count))
     for err in ret.errors:
-        log = logging.getLogger("error")
         log.error("error #{0}, reason: {1}".format(err.index, err.reason))
