@@ -1,9 +1,10 @@
 import asyncio
+import logging, logging.config
 from datetime import datetime
 from typing import cast, Iterable
 from firebase_admin import credentials, auth, initialize_app, _apps
 from router.remote_db import clear_user
-import logging
+from log_config import LOGGER_SETTINGS
 
 EXTRA_GAS = 200.0
 
@@ -41,6 +42,7 @@ def clear_expirations(cred: credentials.Certificate):
     # for user in ghost_ids:
     #     print(f"User: {user.uid} has {json.dumps(user._data, indent=4)}")
     ret = auth.delete_users(ghost_ids)
+    logging.config.dictConfig(LOGGER_SETTINGS)
     log = logging.getLogger("uvicorn.access")
     log.info("Successfully deleted {0} users".format(ret.success_count))
     log.info("Failed to delete {0} users".format(ret.failure_count))
