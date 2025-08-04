@@ -11,7 +11,7 @@ from database import engine
 from services.auth import premium_auth
 from config import config
 
-router = APIRouter()
+router = APIRouter(tags=["Translation"])
 
 
 @router.post("/definition/translation")

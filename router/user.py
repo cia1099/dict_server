@@ -17,7 +17,7 @@ from services.auth import (
 )
 from services.auth import oauth2, guest_auth
 
-router = APIRouter()
+router = APIRouter(tags=["User"])
 
 
 @router.get("/firebase/login")

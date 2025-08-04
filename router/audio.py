@@ -12,7 +12,7 @@ from services.auth import member_auth
 from services.utils import iter_file, read_ram_chunk
 from config import config
 
-router = APIRouter()
+router = APIRouter(tags=["Audio"])
 
 
 @router.get("/dictionary/audio/{filename}")

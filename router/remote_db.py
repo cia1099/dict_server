@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime
 import json
-from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
+from fastapi import APIRouter, Depends, Request, BackgroundTasks, HTTPException, status
 from models.pull import PullIn
 from models.report import ReportIn
 from services.auth import Character
@@ -11,7 +11,7 @@ import sqlalchemy as sql
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from services.auth import premium_auth, member_auth
 
-router = APIRouter()
+router = APIRouter(tags=["Remote DB"])
 earned_token = 2.0
 
 
@@ -73,9 +73,14 @@ async def supabase_pull(
 
 
 @router.post("/report/issue")
-async def report_issue(report: ReportIn, character: Character = Depends(member_auth)):
+async def report_issue(
+    report: ReportIn,
+    back_task: BackgroundTasks,
+    character: Character = Depends(member_auth),
+):
     report.user_id = character.uid
-    await record_issue(report)
+    # await record_issue(report)
+    back_task.add_task(record_issue, report)
     return {
         "status": 200,
         "content": "We've received your report. We'll resolve this ASAP.",

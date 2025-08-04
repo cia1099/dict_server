@@ -40,7 +40,7 @@ from database import engine
 # CursorDep = Annotated[AsyncConnection, Depends(bind_engine)]
 
 
-router = APIRouter()
+router = APIRouter(tags=["Dictionary"])
 
 
 @router.get("/retrieval")

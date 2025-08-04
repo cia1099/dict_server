@@ -20,7 +20,7 @@ from services.utils import read_ram_chunk, iter_file
 from services.gcloud import create_punch_cards
 from services.runware import runware_imagen
 
-router = APIRouter()
+router = APIRouter(tags=["Image"])
 img_auth = ApiAuth(Role.MEMBER, cost_token=2)
 
 

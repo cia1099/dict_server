@@ -34,7 +34,7 @@ from services.character import Character
 from services.utils import read_ram_chunk, async_wrapper
 from services.auth import member_auth
 
-router = APIRouter()
+router = APIRouter(tags=["Chat"])
 
 
 @router.post("/chat/speech")

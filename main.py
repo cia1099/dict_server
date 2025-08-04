@@ -13,6 +13,7 @@ from router.user import router as user_router
 from router.translate import router as translate_router
 from router.pay import router as pay_router
 from router.remote_db import router as db_router
+from router.super import router as super_router
 from database import db_life
 from firebase.helper import clear_expirations
 from config import config
@@ -22,14 +23,13 @@ import logging, logging.config
 
 
 def app_life(app: FastAPI):
-    import firebase_admin
-    from firebase_admin import credentials
+    from firebase_admin import credentials, initialize_app
 
     cred = credentials.Certificate(config.FIREBASE_ADMIN)
     p = Process(target=clear_expirations, args=(cred,))
     p.daemon = False
     p.start()
-    firebase_admin.initialize_app(cred)
+    initialize_app(cred)
     logging.config.dictConfig(LOGGER_SETTINGS)
 
     return db_life(app)
@@ -39,7 +39,7 @@ app = FastAPI(
     lifespan=app_life,
     root_path="/dict",
     title="AI Vocabulary Dictionary",
-    version="1.0.0",
+    version="1.0.1",
     docs_url=None,
     redoc_url=None,
 )
@@ -52,6 +52,7 @@ app.include_router(user_router)
 app.include_router(translate_router)
 app.include_router(pay_router)
 app.include_router(db_router)
+app.include_router(super_router)
 
 
 @app.exception_handler(ClientResponseError)
@@ -70,6 +71,6 @@ async def scalar_html():
     )
 
 
-@app.get("/")
+@app.get("/", tags=["Test"])
 async def hello_word(name: str | None = None):
     return f"Hello Dictionary {name}"
