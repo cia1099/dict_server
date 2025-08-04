@@ -84,10 +84,10 @@ LOGGER_SETTINGS = {
         },
         "error": {
             "level": "ERROR",
-            "handlers": ["logtail"],
+            "handlers": ["logtail", "console"],
             "propagate": False,  # 防止日志冒泡到根记录器
         },
-        "uvicorn.access": {"level": "INFO", "handlers": ["logtail"]},
+        "uvicorn.access": {"level": "INFO", "handlers": ["logtail", "console"]},
     },
 }
 
