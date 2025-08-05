@@ -88,8 +88,13 @@ def verify_api_access(token: Annotated[str, Depends(oauth2)]):
     return Character.from_dict(play_load)
 
 
-async def my_token(email: str):
-    user: auth.UserRecord = auth.get_user_by_email(email)
+async def my_token(uid: str | None, email: str | None):
+    if uid:
+        user: auth.UserRecord = auth.get_user(uid)
+    elif email:
+        user: auth.UserRecord = auth.get_user_by_email(email)
+    else:
+        raise HTTPException(404, "No inputs")
     expire = datetime.datetime.now() + datetime.timedelta(minutes=30)
     play_load = {
         "uid": user.uid,

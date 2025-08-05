@@ -22,6 +22,10 @@ COPY china-wall-over-1eb9183af042.json ./
 
 # 复制数据库文件到指定路径
 COPY dictionary/oxfordstu.db dictionary/
+COPY dictionary/audio/ dictionary/audio/
+COPY dictionary/img/ dictionary/img/
+COPY punch_card/edge.png punch_card/
+COPY punch_card/qr_code.png punch_card/
 
 # 安装Python依赖
 RUN pip install --no-cache-dir -r requirements.txt

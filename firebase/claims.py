@@ -46,7 +46,7 @@ if __name__ == "__main__":
     app = initialize_app(cred)
     uid = "kFIiU336lxQjtwSIiPyTA32boPt2"
     # user: auth.UserRecord = auth.get_user(uid)
-    user: auth.UserRecord = auth.get_user_by_email("cia109@gmail.com")
+    user: auth.UserRecord = auth.get_user_by_email("cia1099@gmail.com")
     auth_time = datetime.fromtimestamp(user.user_metadata.last_sign_in_timestamp * 1e-3)
     print(auth_time)
     claims = user.custom_claims or {}

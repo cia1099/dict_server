@@ -78,9 +78,10 @@ async def request_consume_tokens(character: Character = Depends(guest_auth)):
 @router.post("/god/token", include_in_schema=False)
 async def login_god(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     username = form_data.username
+    uid = form_data.client_id
     # password = form_data.password
     # raise HTTPException(status_code=400, detail="Incorrect username or password")
-    access_token = await my_token(email=username)
+    access_token = await my_token(uid=uid, email=username)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
