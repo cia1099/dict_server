@@ -88,10 +88,10 @@ def verify_api_access(token: Annotated[str, Depends(oauth2)]):
     return Character.from_dict(play_load)
 
 
-async def my_token(uid: str | None, email: str | None):
-    if uid:
+async def my_token(uid: str | None, email: str):
+    if uid and len(uid) > 0:
         user: auth.UserRecord = auth.get_user(uid)
-    elif email:
+    elif len(email) > 0:
         user: auth.UserRecord = auth.get_user_by_email(email)
     else:
         raise HTTPException(404, "No inputs")

@@ -6,6 +6,8 @@ docker build --platform linux/arm64 -f docker/Dockerfile -t dict_server:arm64 . 
 docker build --platform linux/amd64 -f docker/Dockerfile -t dict_server .
 # clear building cache
 docker builder prune -f
+# look docker occupy storage
+docker system df
 
 # tag repository
 docker tag dict_server asia-east1-docker.pkg.dev/china-wall-over/dict-server/dict_server:v1.0

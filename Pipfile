@@ -32,6 +32,7 @@ beautifulsoup4 = "*"
 lxml = "*"
 tqdm = "*"
 opencc-python-reimplemented = "*"
+"ruamel.yaml" = "*"
 
 [requires]
 python_version = "3.12"
