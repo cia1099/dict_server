@@ -8,14 +8,14 @@ from oxfordstu.oxfordstu_schema import Translation
 from aiohttp import ClientResponseError, ClientSession
 
 from database import engine
-from services.auth import premium_auth
+from services.auth import guest_auth
 from config import config
 
 router = APIRouter(tags=["Translation"])
 
 
 @router.post("/definition/translation")
-async def definition_translation(body: TranslateIn, _=Depends(premium_auth)):
+async def definition_translation(body: TranslateIn, _=Depends(guest_auth)):
     if not body.definition_id:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "null value in definition_id")
     lang = body.locate()

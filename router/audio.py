@@ -8,7 +8,7 @@ from aiohttp import ClientResponseError, ClientSession
 
 from models.role import Role
 from models.text2speech import Text2SpeechIn
-from services.auth import member_auth
+from services.auth import guest_auth
 from services.utils import iter_file, read_ram_chunk
 from config import config
 
@@ -37,7 +37,7 @@ async def gtts_audio(tts: Text2SpeechIn):
 
 
 @router.post("/azure/audio")
-async def azure_audio(tts: Text2SpeechIn, _=Depends(member_auth)):
+async def azure_audio(tts: Text2SpeechIn, _=Depends(guest_auth)):
     content = f"""
     <speak version='1.0' xml:lang='{tts.lang}'>
         <voice xml:lang='{tts.lang}' xml:gender='{tts.gender}' name='{tts.get_voice()}'>
